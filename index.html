@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>Peta Data Jembatan</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
+
+<style>
+body { margin:0; font-family: Arial, sans-serif; }
+#map { height:90vh; }
+
+.topbar{
+    padding:10px;
+    background:#f2f2f2;
+    display:flex;
+    gap:10px;
+    align-items:center;
+}
+
+.select2-container{ width:300px !important; }
+
+.bridge-label{
+    font-size:12px;
+    font-weight:bold;
+    color:black;
+}
+
+.popup-content{
+    font-size:13px;
+    line-height:1.6;
+    min-width:250px;
+}
+
+.gmaps-btn{
+    display:inline-block;
+    padding:6px 10px;
+    background:#2c7be5;
+    color:white;
+    text-decoration:none;
+    border-radius:4px;
+    font-size:12px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="topbar">
+    <select id="bridgeSelect"></select>
+    <button onclick="focusBridge()">GO</button>
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+
+// ================= MAP =================
+var map = L.map('map').setView([-8.6,115.2], 10);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution:'&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+var bridgeMarkers = {};
+var bridgeData = [];
+
+// Custom bridge icon
+var bridgeIcon = L.icon({
+    iconUrl:"https://cdn-icons-png.flaticon.com/512/854/854866.png",
+    iconSize:[30,30]
+});
+
+// ================= LOAD EXCEL =================
+fetch('Data Jembatan.xlsx')
+.then(res => res.arrayBuffer())
+.then(data => {
+    var workbook = XLSX.read(data);
+    var sheet = workbook.Sheets[workbook.SheetNames[0]];
+    bridgeData = XLSX.utils.sheet_to_json(sheet);
+
+    loadBridges();
+});
+
+// ================= LOAD MARKERS =================
+function loadBridges(){
+
+    bridgeData.forEach(function(row){
+
+        var lat = parseFloat(row.Koordinat_Y);
+        var lng = parseFloat(row.Koordinat_X);
+
+        if(!lat || !lng) return;
+
+        var marker = L.marker([lat,lng], {icon:bridgeIcon}).addTo(map);
+
+        marker.bindTooltip(row.Nama_Jembatan, {
+            permanent:true,
+            direction:"right",
+            className:"bridge-label"
+        });
+
+        marker.bindPopup(generatePopup(row));
+
+        bridgeMarkers[row.Nama_Jembatan] = marker;
+
+        $('#bridgeSelect').append(
+            new Option(row.Nama_Jembatan, row.Nama_Jembatan)
+        );
+    });
+
+    $('#bridgeSelect').select2({
+        placeholder:"Cari Nama Jembatan..."
+    });
+}
+
+// ================= POPUP =================
+function generatePopup(row){
+
+var gmapsLink = `https://www.google.com/maps?q=${row.Koordinat_Y},${row.Koordinat_X}`;
+
+return `
+<div class="popup-content">
+
+<b style="font-size:15px;">${row.Nama_Jembatan}</b><br><br>
+
+No. Jbt : ${row.No_Jbt}<br>
+Tahun Bangun : ${row["Tahun Bangun"]}<br>
+Panjang (m) : ${row["Panjang (m)"]}<br>
+Lebar Jembatan (m) : ${row["Lebar Jembatan (m)"]}<br>
+Lebar Lajur Lalin (m) : ${row["Lebar Lajur Lalin (m)"]}<br>
+Jml Bentang : ${row["Jml Bentang"]}<br>
+Tipe Bang. Atas : ${row["Tipe Bang. Atas"]}<br>
+NK S2 2025 : ${row["NK S2 2025"]}<br>
+Ruas Jalan : ${row["Ruas Jalan"]}<br>
+PPK : ${row.PPK}<br><br>
+
+<a href="${gmapsLink}" target="_blank" class="gmaps-btn">
+Open GMaps
+</a>
+
+</div>
+`;
+}
+
+// ================= FOCUS FUNCTION =================
+function focusBridge(){
+
+    var name = $('#bridgeSelect').val();
+
+    if(bridgeMarkers[name]){
+        map.setView(bridgeMarkers[name].getLatLng(), 17);
+        bridgeMarkers[name].openPopup();
+    }
+}
+
+</script>
+
+</body>
+</html>
