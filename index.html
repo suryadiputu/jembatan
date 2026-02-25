@@ -1,95 +1,66 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8">
+<meta charset="utf-8"/>
+<title>Peta Aset Jembatan</title>
+
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>WebGIS Jembatan</title>
-
-<link rel="stylesheet"
-href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-
-<link rel="stylesheet"
-href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
-
-<link rel="stylesheet"
-href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
-
-<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
 
 <style>
 
-html,body{
-height:100%;
+body{
 margin:0;
-font-family:Arial;
+font-family:Segoe UI,Arial;
+background:#f5f7fa;
 }
 
 #map{
-height:100%;
+height:92vh;
 }
 
-/* PANEL */
+/* TOP PANEL */
 
-.panel{
+.topbar{
 
 position:absolute;
-
 top:10px;
-
 left:50%;
-
 transform:translateX(-50%);
 
 background:white;
 
-padding:15px;
+padding:10px 14px;
 
-border-radius:14px;
+border-radius:10px;
 
-box-shadow:0 4px 12px rgba(0,0,0,0.3);
+box-shadow:0 3px 10px rgba(0,0,0,0.2);
+
+display:flex;
+gap:8px;
 
 z-index:1000;
-
-width:300px;
-
 }
 
-/* DROPDOWN */
+/* Dropdown */
 
-select{
-
-width:100%;
-
-padding:10px;
-
-font-size:16px;
-
-border-radius:8px;
-
-margin-bottom:8px;
-
+.select2-container{
+width:260px !important;
 }
 
-/* BUTTON */
+/* Buttons */
 
-button{
-
-width:100%;
-
-padding:12px;
-
-font-size:16px;
-
-border-radius:8px;
+.btn{
 
 border:none;
 
-margin-top:6px;
+padding:8px 14px;
+
+border-radius:6px;
+
+font-weight:600;
 
 cursor:pointer;
 
@@ -97,27 +68,49 @@ cursor:pointer;
 
 /* GO */
 
-.go{
+.btn-go{
 
-background:#2b6df6;
-
+background:#0d6efd;
 color:white;
 
 }
 
-/* POSISI */
+/* GPS */
 
-.posisi{
+.btn-gps{
 
-background:#1e8e3e;
-
+background:#198754;
 color:white;
 
 }
 
-/* GMAPS */
+/* Tooltip */
 
-.gmaps-btn{
+.bridge-label{
+
+font-size:12px;
+font-weight:bold;
+
+background:rgba(255,255,255,0.9);
+
+padding:2px 6px;
+
+border-radius:4px;
+
+}
+
+/* Popup */
+
+.popup-content{
+
+font-size:14px;
+line-height:1.6;
+
+}
+
+/* Gmaps button */
+
+.leaflet-popup-content .gmaps-btn{
 
 display:inline-block;
 
@@ -125,7 +118,7 @@ padding:8px 14px;
 
 background:#0d6efd;
 
-color:#fff !important;
+color:white !important;
 
 text-decoration:none;
 
@@ -133,7 +126,35 @@ border-radius:6px;
 
 font-size:13px;
 
-margin-top:8px;
+font-weight:600;
+
+}
+
+/* Mobile */
+
+@media (max-width:768px){
+
+.topbar{
+
+left:10px;
+right:10px;
+transform:none;
+
+flex-direction:column;
+
+}
+
+.select2-container{
+width:100% !important;
+}
+
+#map{
+height:88vh;
+}
+
+.popup-content{
+font-size:16px;
+}
 
 }
 
@@ -141,71 +162,78 @@ margin-top:8px;
 
 </head>
 
+
 <body>
 
-<div id="map"></div>
+<div class="topbar">
 
-<div class="panel">
+<select id="bridgeSelect"></select>
 
-<select id="pilih">
-
-<option value="">Pilih Jembatan</option>
-
-</select>
-
-<button class="go" onclick="zoomJembatan()">
+<button class="btn btn-go" onclick="focusBridge()">
 GO
 </button>
 
-<button class="posisi" onclick="posisiSaya()">
+<button class="btn btn-gps" onclick="locateUser()">
 Posisi Saat Ini
 </button>
 
 </div>
 
+<div id="map"></div>
+
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+
 
 <script>
 
 
-var map=L.map('map').setView([-8.4,115.2],9);
+// ================= MAP =================
 
+var map = L.map('map').setView([-8.6,115.2],10);
 
-L.tileLayer(
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
 
-'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+attribution:'© OpenStreetMap'
 
-).addTo(map);
-
-
-
-var cluster=L.markerClusterGroup();
-
-
-map.addLayer(cluster);
+}).addTo(map);
 
 
 
-var dataJembatan=[];
+var bridgeMarkers={};
+
+var allMarkers=[];
+
+var userMarker=null;
 
 
+// Bridge Icon
 
-/* ICON */
 
 var bridgeIcon=L.icon({
 
-iconUrl:'bridge.png',
+iconUrl:"bridge.png",
 
-iconSize:[34,34],
+iconSize:[40,40],
 
-iconAnchor:[17,34]
+iconAnchor:[20,40],
+
+popupAnchor:[0,-35]
 
 });
 
 
+// ================= LOAD EXCEL =================
 
-/* LOAD EXCEL */
 
-fetch('./Data Jembatan.xlsx')
+fetch('Data Jembatan.xlsx')
 
 .then(res=>res.arrayBuffer())
 
@@ -215,47 +243,144 @@ var workbook=XLSX.read(data);
 
 var sheet=workbook.Sheets[workbook.SheetNames[0]];
 
-var json=XLSX.utils.sheet_to_json(sheet);
+var rows=XLSX.utils.sheet_to_json(sheet);
+
+loadBridges(rows);
+
+});
 
 
 
-json.forEach(function(row,i){
+
+// ================= MARKERS =================
+
+
+function loadBridges(rows){
+
+
+rows.forEach(function(row){
+
+
+var lat=parseFloat(row.Koordinat_Y);
+
+var lng=parseFloat(row.Koordinat_X);
+
+
+if(!lat||!lng)return;
 
 
 
-var lat=row.Latitude;
+var marker=L.marker([lat,lng],{
 
-var lng=row.Longitude;
+icon:bridgeIcon
 
-
-
-if(!lat || !lng)return;
+}).addTo(map);
 
 
 
-dataJembatan.push(row);
+
+marker.bindTooltip(row.Nama_Jembatan,{
+
+permanent:false,
+
+direction:"top",
+
+className:"bridge-label"
+
+});
 
 
 
-/* MARKER */
+marker.bindPopup(generatePopup(row));
 
-var marker=L.marker(
 
-[lat,lng],
 
-{icon:bridgeIcon}
+marker.bridgeName=row.Nama_Jembatan;
+
+
+
+allMarkers.push(marker);
+
+
+bridgeMarkers[row.Nama_Jembatan]=marker;
+
+
+
+$('#bridgeSelect').append(
+
+new Option(row.Nama_Jembatan,row.Nama_Jembatan)
 
 );
 
 
+});
 
-/* POPUP */
 
-var popup=`
+$('#bridgeSelect').select2({
 
-<b>${row["Nama Jembatan"]}</b><br><br>
+placeholder:"Cari Nama Jembatan"
 
-No. Jbt : ${row["No. Jbt"]}<br>
+});
+
+
+}
+
+
+
+// ================= ZOOM OPTION B =================
+
+
+map.on('zoomend',function(){
+
+
+var zoom=map.getZoom();
+
+
+allMarkers.forEach(function(marker){
+
+
+if(zoom>=15)
+
+marker.openTooltip();
+
+else
+
+marker.closeTooltip();
+
+
+});
+
+
+});
+
+
+
+// ================= POPUP =================
+
+
+function generatePopup(row){
+
+
+var gmaps=
+
+`https://www.google.com/maps?q=${row.Koordinat_Y},${row.Koordinat_X}`;
+
+
+return `
+
+<div class="popup-content">
+
+
+<b style="font-size:16px">
+
+${row.Nama_Jembatan}
+
+</b>
+
+<br><br>
+
+
+No. Jbt : ${row.No_Jbt}<br>
 
 Tahun Bangun : ${row["Tahun Bangun"]}<br>
 
@@ -273,108 +398,70 @@ NK S2 2025 : ${row["NK S2 2025"]}<br>
 
 Ruas Jalan : ${row["Ruas Jalan"]}<br>
 
-PPK : ${row["PPK"]}<br>
+PPK : ${row.PPK}<br><br>
 
-<br>
 
-<a class="gmaps-btn"
+<a href="${gmaps}"
 
 target="_blank"
 
-href="https://maps.google.com/?q=${lat},${lng}">
+class="gmaps-btn">
 
 Open GMaps
 
 </a>
 
+
+</div>
+
 `;
 
-
-marker.bindPopup(popup);
-
-
-
-cluster.addLayer(marker);
+}
 
 
 
-/* DROPDOWN */
-
-var opt=document.createElement("option");
-
-opt.value=i;
-
-opt.text=row["Nama Jembatan"];
-
-document.getElementById("pilih").appendChild(opt);
+// ================= GO BUTTON =================
 
 
-
-});
-
+function focusBridge(){
 
 
-});
+var name=$('#bridgeSelect').val();
 
 
-
-/* GO */
-
-function zoomJembatan(){
-
-
-var i=document.getElementById("pilih").value;
-
-
-if(i==="")return;
-
-
-var row=dataJembatan[i];
+if(bridgeMarkers[name]){
 
 
 map.setView(
 
-[row.Latitude,row.Longitude],
+bridgeMarkers[name].getLatLng(),
 
 17
 
 );
 
 
+bridgeMarkers[name].openPopup();
+
+
+}
+
+
 }
 
 
 
-/* POSISI */
-
-var markerSaya;
+// ================= GPS BUTTON =================
 
 
-function posisiSaya(){
+function locateUser(){
 
 
-navigator.geolocation.getCurrentPosition(
+map.locate({
 
-function(pos){
+setView:true,
 
-
-var lat=pos.coords.latitude;
-
-var lng=pos.coords.longitude;
-
-
-if(markerSaya)
-
-map.removeLayer(markerSaya);
-
-
-markerSaya=L.marker([lat,lng])
-
-.addTo(map);
-
-
-map.setView([lat,lng],16);
-
+maxZoom:17
 
 });
 
@@ -382,8 +469,41 @@ map.setView([lat,lng],16);
 }
 
 
+
+map.on('locationfound',function(e){
+
+
+if(userMarker)
+
+map.removeLayer(userMarker);
+
+
+userMarker=L.marker(
+
+e.latlng
+
+).addTo(map)
+
+
+.bindPopup("Posisi Anda")
+
+.openPopup();
+
+
+});
+
+
+
+map.on('locationerror',function(){
+
+alert("Tidak bisa mendapatkan lokasi");
+
+});
+
+
 </script>
 
 
 </body>
+
 </html>
