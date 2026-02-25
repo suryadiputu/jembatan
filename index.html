@@ -2,172 +2,504 @@
 <html>
 <head>
 <meta charset="utf-8"/>
-<title>Peta Jembatan</title>
+<title>Peta Aset Jembatan</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
 
 <style>
-body { margin:0; font-family: Arial, sans-serif; }
-#map { height:90vh; }
 
-.topbar{
-    padding:10px;
-    background:#f2f2f2;
-    display:flex;
-    gap:10px;
-    align-items:center;
+body{
+margin:0;
+font-family:Segoe UI,Arial;
+background:#f5f7fa;
 }
 
-.select2-container{ width:300px !important; }
+#map{
+height:92vh;
+}
+
+/* TOP PANEL */
+
+.topbar{
+
+position:absolute;
+top:10px;
+left:50%;
+transform:translateX(-50%);
+
+background:white;
+
+padding:10px 14px;
+
+border-radius:10px;
+
+box-shadow:0 3px 10px rgba(0,0,0,0.2);
+
+display:flex;
+gap:8px;
+
+z-index:1000;
+}
+
+/* Dropdown */
+
+.select2-container{
+width:260px !important;
+}
+
+/* Buttons */
+
+.btn{
+
+border:none;
+
+padding:8px 14px;
+
+border-radius:6px;
+
+font-weight:600;
+
+cursor:pointer;
+
+}
+
+/* GO */
+
+.btn-go{
+
+background:#0d6efd;
+color:white;
+
+}
+
+/* GPS */
+
+.btn-gps{
+
+background:#198754;
+color:white;
+
+}
+
+/* Tooltip */
 
 .bridge-label{
-    font-size:12px;
-    font-weight:bold;
-    color:black;
+
+font-size:12px;
+font-weight:bold;
+
+background:rgba(255,255,255,0.9);
+
+padding:2px 6px;
+
+border-radius:4px;
+
+}
+
+/* Popup */
+
+.popup-content{
+
+font-size:14px;
+line-height:1.6;
+
+}
+
+/* Gmaps button */
+
+.leaflet-popup-content .gmaps-btn{
+
+display:inline-block;
+
+padding:8px 14px;
+
+background:#0d6efd;
+
+color:white !important;
+
+text-decoration:none;
+
+border-radius:6px;
+
+font-size:13px;
+
+font-weight:600;
+
+}
+
+/* Mobile */
+
+@media (max-width:768px){
+
+.topbar{
+
+left:10px;
+right:10px;
+transform:none;
+
+flex-direction:column;
+
+}
+
+.select2-container{
+width:100% !important;
+}
+
+#map{
+height:88vh;
 }
 
 .popup-content{
-    font-size:13px;
-    line-height:1.6;
-    min-width:250px;
+font-size:16px;
 }
 
-.leaflet-popup-content .gmaps-btn{
-    display:inline-block;
-    padding:8px 14px;
-    background:#0d6efd;
-    color:#ffffff !important;
-    text-decoration:none;
-    border-radius:6px;
-    font-size:13px;
-    font-weight:600;
-    transition:0.2s;
 }
 
-.leaflet-popup-content .gmaps-btn:hover{
-    background:#0b5ed7;
-    color:#ffffff !important;
-}
 </style>
+
 </head>
+
 
 <body>
 
 <div class="topbar">
-    <select id="bridgeSelect"></select>
-    <button onclick="focusBridge()">GO</button>
+
+<select id="bridgeSelect"></select>
+
+<button class="btn btn-go" onclick="focusBridge()">
+GO
+</button>
+
+<button class="btn btn-gps" onclick="locateUser()">
+Posisi Saat Ini
+</button>
+
 </div>
 
 <div id="map"></div>
 
+
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+
 
 <script>
 
-// ================= MAP =================
-var map = L.map('map').setView([-8.6,115.2], 10);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution:'&copy; OpenStreetMap contributors'
+// ================= MAP =================
+
+var map = L.map('map').setView([-8.6,115.2],10);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+
+attribution:'© OpenStreetMap'
+
 }).addTo(map);
 
-var bridgeMarkers = {};
-var bridgeData = [];
 
-// Custom bridge icon
-var bridgeIcon = L.icon({
-    iconUrl:"https://cdn-icons-png.flaticon.com/512/854/854866.png",
-    iconSize:[30,30]
+
+var bridgeMarkers={};
+
+var allMarkers=[];
+
+var userMarker=null;
+
+
+// Bridge Icon
+
+var bridgeIcon=L.icon({
+
+iconUrl:"https://cdn-icons-png.flaticon.com/512/684/684908.png",
+
+iconSize:[34,34]
+
 });
+
+
 
 // ================= LOAD EXCEL =================
-fetch('Data Jembatan.xlsx')
-.then(res => res.arrayBuffer())
-.then(data => {
-    var workbook = XLSX.read(data);
-    var sheet = workbook.Sheets[workbook.SheetNames[0]];
-    bridgeData = XLSX.utils.sheet_to_json(sheet);
 
-    loadBridges();
+
+fetch('Data Jembatan.xlsx')
+
+.then(res=>res.arrayBuffer())
+
+.then(data=>{
+
+var workbook=XLSX.read(data);
+
+var sheet=workbook.Sheets[workbook.SheetNames[0]];
+
+var rows=XLSX.utils.sheet_to_json(sheet);
+
+loadBridges(rows);
+
 });
 
-// ================= LOAD MARKERS =================
-function loadBridges(){
 
-    bridgeData.forEach(function(row){
 
-        var lat = parseFloat(row.Koordinat_Y);
-        var lng = parseFloat(row.Koordinat_X);
 
-        if(!lat || !lng) return;
+// ================= MARKERS =================
 
-        var marker = L.marker([lat,lng], {icon:bridgeIcon}).addTo(map);
 
-        marker.bindTooltip(row.Nama_Jembatan, {
-            permanent:true,
-            direction:"right",
-            className:"bridge-label"
-        });
+function loadBridges(rows){
 
-        marker.bindPopup(generatePopup(row));
 
-        bridgeMarkers[row.Nama_Jembatan] = marker;
+rows.forEach(function(row){
 
-        $('#bridgeSelect').append(
-            new Option(row.Nama_Jembatan, row.Nama_Jembatan)
-        );
-    });
 
-    $('#bridgeSelect').select2({
-        placeholder:"Cari Nama Jembatan..."
-    });
+var lat=parseFloat(row.Koordinat_Y);
+
+var lng=parseFloat(row.Koordinat_X);
+
+
+if(!lat||!lng)return;
+
+
+
+var marker=L.marker([lat,lng],{
+
+icon:bridgeIcon
+
+}).addTo(map);
+
+
+
+
+marker.bindTooltip(row.Nama_Jembatan,{
+
+permanent:false,
+
+direction:"top",
+
+className:"bridge-label"
+
+});
+
+
+
+marker.bindPopup(generatePopup(row));
+
+
+
+marker.bridgeName=row.Nama_Jembatan;
+
+
+
+allMarkers.push(marker);
+
+
+bridgeMarkers[row.Nama_Jembatan]=marker;
+
+
+
+$('#bridgeSelect').append(
+
+new Option(row.Nama_Jembatan,row.Nama_Jembatan)
+
+);
+
+
+});
+
+
+$('#bridgeSelect').select2({
+
+placeholder:"Cari Nama Jembatan"
+
+});
+
+
 }
+
+
+
+// ================= ZOOM OPTION B =================
+
+
+map.on('zoomend',function(){
+
+
+var zoom=map.getZoom();
+
+
+allMarkers.forEach(function(marker){
+
+
+if(zoom>=15)
+
+marker.openTooltip();
+
+else
+
+marker.closeTooltip();
+
+
+});
+
+
+});
+
+
 
 // ================= POPUP =================
+
+
 function generatePopup(row){
 
-var gmapsLink = `https://www.google.com/maps?q=${row.Koordinat_Y},${row.Koordinat_X}`;
+
+var gmaps=
+
+`https://www.google.com/maps?q=${row.Koordinat_Y},${row.Koordinat_X}`;
+
 
 return `
+
 <div class="popup-content">
 
-<b style="font-size:15px;">${row.Nama_Jembatan}</b><br><br>
+
+<b style="font-size:16px">
+
+${row.Nama_Jembatan}
+
+</b>
+
+<br><br>
+
 
 No. Jbt : ${row.No_Jbt}<br>
+
 Tahun Bangun : ${row["Tahun Bangun"]}<br>
+
 Panjang (m) : ${row["Panjang (m)"]}<br>
+
 Lebar Jembatan (m) : ${row["Lebar Jembatan (m)"]}<br>
+
 Lebar Lajur Lalin (m) : ${row["Lebar Lajur Lalin (m)"]}<br>
+
 Jml Bentang : ${row["Jml Bentang"]}<br>
+
 Tipe Bang. Atas : ${row["Tipe Bang. Atas"]}<br>
+
 NK S2 2025 : ${row["NK S2 2025"]}<br>
+
 Ruas Jalan : ${row["Ruas Jalan"]}<br>
+
 PPK : ${row.PPK}<br><br>
 
-<a href="${gmapsLink}" target="_blank" class="gmaps-btn">
+
+<a href="${gmaps}"
+
+target="_blank"
+
+class="gmaps-btn">
+
 Open GMaps
+
 </a>
 
+
 </div>
+
 `;
+
 }
 
-// ================= FOCUS FUNCTION =================
+
+
+// ================= GO BUTTON =================
+
+
 function focusBridge(){
 
-    var name = $('#bridgeSelect').val();
 
-    if(bridgeMarkers[name]){
-        map.setView(bridgeMarkers[name].getLatLng(), 17);
-        bridgeMarkers[name].openPopup();
-    }
+var name=$('#bridgeSelect').val();
+
+
+if(bridgeMarkers[name]){
+
+
+map.setView(
+
+bridgeMarkers[name].getLatLng(),
+
+17
+
+);
+
+
+bridgeMarkers[name].openPopup();
+
+
 }
+
+
+}
+
+
+
+// ================= GPS BUTTON =================
+
+
+function locateUser(){
+
+
+map.locate({
+
+setView:true,
+
+maxZoom:17
+
+});
+
+
+}
+
+
+
+map.on('locationfound',function(e){
+
+
+if(userMarker)
+
+map.removeLayer(userMarker);
+
+
+userMarker=L.marker(
+
+e.latlng
+
+).addTo(map)
+
+
+.bindPopup("Posisi Anda")
+
+.openPopup();
+
+
+});
+
+
+
+map.on('locationerror',function(){
+
+alert("Tidak bisa mendapatkan lokasi");
+
+});
+
 
 </script>
 
+
 </body>
+
 </html>
