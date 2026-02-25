@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>WebGIS Aset Jembatan</title>
+<title>WebGIS Jembatan</title>
 
 <link rel="stylesheet"
 href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -14,6 +14,12 @@ href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
 
 <link rel="stylesheet"
 href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
 <style>
 
@@ -27,81 +33,108 @@ font-family:Arial;
 height:100%;
 }
 
+/* PANEL */
+
 .panel{
 
 position:absolute;
-top:15px;
+
+top:10px;
+
 left:50%;
+
 transform:translateX(-50%);
-z-index:1000;
 
 background:white;
-padding:14px;
+
+padding:15px;
 
 border-radius:14px;
 
-box-shadow:0 4px 15px rgba(0,0,0,0.25);
+box-shadow:0 4px 12px rgba(0,0,0,0.3);
 
-width:90%;
-max-width:420px;
+z-index:1000;
+
+width:300px;
+
 }
+
+/* DROPDOWN */
 
 select{
 
 width:100%;
-padding:12px;
+
+padding:10px;
+
 font-size:16px;
+
 border-radius:8px;
-border:1px solid #ccc;
 
 margin-bottom:8px;
 
 }
 
+/* BUTTON */
+
 button{
 
 width:100%;
+
 padding:12px;
+
 font-size:16px;
 
 border-radius:8px;
+
 border:none;
 
 margin-top:6px;
 
+cursor:pointer;
+
 }
+
+/* GO */
 
 .go{
 
-background:#1e6bd6;
+background:#2b6df6;
+
 color:white;
 
 }
 
-.loc{
+/* POSISI */
 
-background:#1c8f4d;
+.posisi{
+
+background:#1e8e3e;
+
 color:white;
 
 }
 
-.popupTitle{
+/* GMAPS */
 
-font-weight:bold;
-font-size:18px;
-margin-bottom:4px;
+.gmaps-btn{
 
-}
-
-.gmaps{
-
-color:white;
-background:#1e6bd6;
-padding:6px 10px;
-border-radius:6px;
-text-decoration:none;
 display:inline-block;
-margin-top:6px;
+
+padding:8px 14px;
+
+background:#0d6efd;
+
+color:#fff !important;
+
+text-decoration:none;
+
+border-radius:6px;
+
+font-size:13px;
+
+margin-top:8px;
+
 }
 
 </style>
@@ -110,41 +143,55 @@ margin-top:6px;
 
 <body>
 
+<div id="map"></div>
+
 <div class="panel">
 
-<select id="bridgeSelect">
-<option>Pilih Jembatan</option>
+<select id="pilih">
+
+<option value="">Pilih Jembatan</option>
+
 </select>
 
-<button class="go" onclick="goBridge()">GO</button>
+<button class="go" onclick="zoomJembatan()">
+GO
+</button>
 
-<button class="loc" onclick="locateUser()">
+<button class="posisi" onclick="posisiSaya()">
 Posisi Saat Ini
 </button>
 
 </div>
 
-<div id="map"></div>
-
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
 <script>
 
 
-var map = L.map('map').setView([-8.4,115.2],10);
+var map=L.map('map').setView([-8.4,115.2],9);
+
 
 L.tileLayer(
-'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-{
-attribution:'© OpenStreetMap'
-}).addTo(map);
+
+'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+
+).addTo(map);
 
 
 
-var bridgeIcon = L.icon({
+var cluster=L.markerClusterGroup();
+
+
+map.addLayer(cluster);
+
+
+
+var dataJembatan=[];
+
+
+
+/* ICON */
+
+var bridgeIcon=L.icon({
 
 iconUrl:'bridge.png',
 
@@ -156,123 +203,187 @@ iconAnchor:[17,34]
 
 
 
-var clusterGroup = L.markerClusterGroup({
+/* LOAD EXCEL */
 
-maxClusterRadius:50,
+fetch('./Data Jembatan.xlsx')
 
-disableClusteringAtZoom:14
+.then(res=>res.arrayBuffer())
 
-});
+.then(data=>{
 
+var workbook=XLSX.read(data);
 
-var bridges = [
+var sheet=workbook.Sheets[workbook.SheetNames[0]];
 
-{nama:"Jembatan A",lat:-8.5,lon:115.2},
-
-{nama:"Jembatan B",lat:-8.4,lon:115.1},
-
-{nama:"Jembatan C",lat:-8.6,lon:115.3}
-
-];
+var json=XLSX.utils.sheet_to_json(sheet);
 
 
 
-var select = document.getElementById("bridgeSelect");
+json.forEach(function(row,i){
 
 
-bridges.forEach(function(b,i){
 
-var m = L.marker(
-[b.lat,b.lon],
+var lat=row.Latitude;
+
+var lng=row.Longitude;
+
+
+
+if(!lat || !lng)return;
+
+
+
+dataJembatan.push(row);
+
+
+
+/* MARKER */
+
+var marker=L.marker(
+
+[lat,lng],
+
 {icon:bridgeIcon}
-);
-
-
-var link =
-"https://www.google.com/maps?q="
-+b.lat+","+b.lon;
-
-
-m.bindPopup(
-
-"<div class='popupTitle'>"
-+b.nama+
-"</div>"+
-
-"<a class='gmaps' target='_blank' href='"
-+link+
-"'>Open GMaps</a>"
 
 );
 
 
-clusterGroup.addLayer(m);
+
+/* POPUP */
+
+var popup=`
+
+<b>${row["Nama Jembatan"]}</b><br><br>
+
+No. Jbt : ${row["No. Jbt"]}<br>
+
+Tahun Bangun : ${row["Tahun Bangun"]}<br>
+
+Panjang (m) : ${row["Panjang (m)"]}<br>
+
+Lebar Jembatan (m) : ${row["Lebar Jembatan (m)"]}<br>
+
+Lebar Lajur Lalin (m) : ${row["Lebar Lajur Lalin (m)"]}<br>
+
+Jml Bentang : ${row["Jml Bentang"]}<br>
+
+Tipe Bang. Atas : ${row["Tipe Bang. Atas"]}<br>
+
+NK S2 2025 : ${row["NK S2 2025"]}<br>
+
+Ruas Jalan : ${row["Ruas Jalan"]}<br>
+
+PPK : ${row["PPK"]}<br>
+
+<br>
+
+<a class="gmaps-btn"
+
+target="_blank"
+
+href="https://maps.google.com/?q=${lat},${lng}">
+
+Open GMaps
+
+</a>
+
+`;
+
+
+marker.bindPopup(popup);
 
 
 
-var opt = document.createElement("option");
+cluster.addLayer(marker);
+
+
+
+/* DROPDOWN */
+
+var opt=document.createElement("option");
 
 opt.value=i;
 
-opt.text=b.nama;
+opt.text=row["Nama Jembatan"];
 
-select.appendChild(opt);
+document.getElementById("pilih").appendChild(opt);
+
+
 
 });
 
 
-map.addLayer(clusterGroup);
+
+});
 
 
 
-function goBridge(){
+/* GO */
 
-var i=select.value;
+function zoomJembatan(){
 
-if(i==="Pilih Jembatan")return;
 
-var b=bridges[i];
+var i=document.getElementById("pilih").value;
 
-map.setView([b.lat,b.lon],17);
+
+if(i==="")return;
+
+
+var row=dataJembatan[i];
+
+
+map.setView(
+
+[row.Latitude,row.Longitude],
+
+17
+
+);
+
 
 }
 
 
 
-var userMarker;
+/* POSISI */
+
+var markerSaya;
 
 
-function locateUser(){
-
-map.locate({setView:true,maxZoom:17});
-
-}
+function posisiSaya(){
 
 
-map.on('locationfound',function(e){
+navigator.geolocation.getCurrentPosition(
 
-if(userMarker){
+function(pos){
 
-map.removeLayer(userMarker);
 
-}
+var lat=pos.coords.latitude;
 
-userMarker=L.marker(e.latlng)
-.addTo(map)
-.bindPopup("Posisi Anda")
-.openPopup();
+var lng=pos.coords.longitude;
+
+
+if(markerSaya)
+
+map.removeLayer(markerSaya);
+
+
+markerSaya=L.marker([lat,lng])
+
+.addTo(map);
+
+
+map.setView([lat,lng],16);
+
 
 });
 
 
-map.on('locationerror',function(){
-
-alert("GPS tidak aktif");
-
-});
+}
 
 
 </script>
+
 
 </body>
 </html>
