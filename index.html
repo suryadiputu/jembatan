@@ -7,7 +7,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
+<link rel="stylesheet"
+href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+
+<link rel="stylesheet"
+href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
+
 
 <style>
 
@@ -66,22 +74,14 @@ cursor:pointer;
 
 }
 
-/* GO */
-
 .btn-go{
-
 background:#0d6efd;
 color:white;
-
 }
 
-/* GPS */
-
 .btn-gps{
-
 background:#198754;
 color:white;
-
 }
 
 /* Tooltip */
@@ -108,7 +108,7 @@ line-height:1.6;
 
 }
 
-/* Gmaps button */
+/* Gmaps */
 
 .leaflet-popup-content .gmaps-btn{
 
@@ -182,6 +182,7 @@ Posisi Saat Ini
 <div id="map"></div>
 
 
+
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -189,6 +190,8 @@ Posisi Saat Ini
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
 
 
@@ -200,22 +203,25 @@ Posisi Saat Ini
 var map = L.map('map').setView([-8.6,115.2],10);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-
 attribution:'© OpenStreetMap'
-
 }).addTo(map);
 
 
 
 var bridgeMarkers={};
-
 var allMarkers=[];
-
 var userMarker=null;
 
 
-// Bridge Icon
+/* CLUSTER GROUP */
 
+var clusterGroup=L.markerClusterGroup();
+
+map.addLayer(clusterGroup);
+
+
+
+// Bridge Icon
 
 var bridgeIcon=L.icon({
 
@@ -230,8 +236,8 @@ popupAnchor:[0,-35]
 });
 
 
-// ================= LOAD EXCEL =================
 
+// ================= LOAD EXCEL =================
 
 fetch('Data Jembatan.xlsx')
 
@@ -257,25 +263,23 @@ loadBridges(rows);
 
 function loadBridges(rows){
 
-
 rows.forEach(function(row){
-
 
 var lat=parseFloat(row.Koordinat_Y);
 
 var lng=parseFloat(row.Koordinat_X);
 
-
 if(!lat||!lng)return;
-
 
 
 var marker=L.marker([lat,lng],{
 
 icon:bridgeIcon
 
-}).addTo(map);
+});
 
+
+clusterGroup.addLayer(marker);
 
 
 
@@ -290,20 +294,16 @@ className:"bridge-label"
 });
 
 
-
 marker.bindPopup(generatePopup(row));
 
 
-
 marker.bridgeName=row.Nama_Jembatan;
-
 
 
 allMarkers.push(marker);
 
 
 bridgeMarkers[row.Nama_Jembatan]=marker;
-
 
 
 $('#bridgeSelect').append(
@@ -322,36 +322,28 @@ placeholder:"Cari Nama Jembatan"
 
 });
 
-
 }
 
 
 
-// ================= ZOOM OPTION B =================
+// ================= TOOLTIP OPTION B =================
 
 
 map.on('zoomend',function(){
 
-
 var zoom=map.getZoom();
-
 
 allMarkers.forEach(function(marker){
 
-
 if(zoom>=15)
-
 marker.openTooltip();
-
 else
-
 marker.closeTooltip();
 
+});
 
 });
 
-
-});
 
 
 
@@ -360,16 +352,13 @@ marker.closeTooltip();
 
 function generatePopup(row){
 
-
 var gmaps=
 
 `https://www.google.com/maps?q=${row.Koordinat_Y},${row.Koordinat_X}`;
 
-
 return `
 
 <div class="popup-content">
-
 
 <b style="font-size:16px">
 
@@ -378,7 +367,6 @@ ${row.Nama_Jembatan}
 </b>
 
 <br><br>
-
 
 No. Jbt : ${row.No_Jbt}<br>
 
@@ -400,7 +388,6 @@ Ruas Jalan : ${row["Ruas Jalan"]}<br>
 
 PPK : ${row.PPK}<br><br>
 
-
 <a href="${gmaps}"
 
 target="_blank"
@@ -410,7 +397,6 @@ class="gmaps-btn">
 Open GMaps
 
 </a>
-
 
 </div>
 
@@ -425,12 +411,9 @@ Open GMaps
 
 function focusBridge(){
 
-
 var name=$('#bridgeSelect').val();
 
-
 if(bridgeMarkers[name]){
-
 
 map.setView(
 
@@ -440,12 +423,9 @@ bridgeMarkers[name].getLatLng(),
 
 );
 
-
 bridgeMarkers[name].openPopup();
 
-
 }
-
 
 }
 
@@ -456,7 +436,6 @@ bridgeMarkers[name].openPopup();
 
 function locateUser(){
 
-
 map.locate({
 
 setView:true,
@@ -465,33 +444,24 @@ maxZoom:17
 
 });
 
-
 }
 
 
 
 map.on('locationfound',function(e){
 
-
 if(userMarker)
-
 map.removeLayer(userMarker);
 
+userMarker=L.marker(e.latlng)
 
-userMarker=L.marker(
-
-e.latlng
-
-).addTo(map)
-
+.addTo(map)
 
 .bindPopup("Posisi Anda")
 
 .openPopup();
 
-
 });
-
 
 
 map.on('locationerror',function(){
@@ -505,5 +475,4 @@ alert("Tidak bisa mendapatkan lokasi");
 
 
 </body>
-
 </html>
