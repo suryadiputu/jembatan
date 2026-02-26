@@ -289,10 +289,12 @@ grid-template-columns:1fr;
 </div>
 
 
+<button class="filterClose" onclick="resetFilter()">
+Reset Filter
+</button>
+
 <button class="filterClose" onclick="toggleFilter()">
-
 Tutup
-
 </button>
 
 </div>
@@ -730,7 +732,19 @@ applyFilter();
 
 }
 
+function resetFilter(){
 
+$('.ppkCheck').prop('checked',false);
+
+$('.nkCheck').prop('checked',false);
+
+localStorage.removeItem("ppkFilter");
+
+localStorage.removeItem("nkFilter");
+
+loadBridges(allRows);
+
+}
 
 </script>
 
