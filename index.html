@@ -16,7 +16,6 @@ href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.c
 
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
 
-
 <style>
 
 body{
@@ -29,49 +28,34 @@ background:#f5f7fa;
 height:92vh;
 }
 
-/* TOP PANEL */
+/* TOPBAR */
 
 .topbar{
-
 position:absolute;
 top:10px;
 left:50%;
 transform:translateX(-50%);
-
 background:white;
-
 padding:10px 14px;
-
 border-radius:10px;
-
 box-shadow:0 3px 10px rgba(0,0,0,0.2);
-
 display:flex;
 gap:8px;
-
 z-index:1000;
 }
-
-/* Dropdown */
 
 .select2-container{
 width:260px !important;
 }
 
-/* Buttons */
+/* BUTTON */
 
 .btn{
-
 border:none;
-
 padding:8px 14px;
-
 border-radius:6px;
-
 font-weight:600;
-
 cursor:pointer;
-
 }
 
 .btn-go{
@@ -84,53 +68,136 @@ background:#198754;
 color:white;
 }
 
-/* Tooltip */
+.btn-filter{
+background:#6c757d;
+color:white;
+}
+
+
+/* TOOLTIP */
 
 .bridge-label{
-
 font-size:12px;
 font-weight:bold;
-
-background:rgba(255,255,255,0.9);
-
+background:rgba(255,255,255,0.95);
 padding:2px 6px;
-
 border-radius:4px;
-
 }
 
-/* Popup */
+
+/* POPUP */
 
 .popup-content{
-
 font-size:14px;
 line-height:1.6;
+}
+
+
+/* GMAPS */
+
+.leaflet-popup-content .gmaps-btn{
+display:inline-block;
+padding:8px 14px;
+background:#0d6efd;
+color:white !important;
+text-decoration:none;
+border-radius:6px;
+font-size:13px;
+font-weight:600;
+}
+
+
+/* FILTER WINDOW */
+
+.filterWindow{
+
+position:absolute;
+
+top:70px;
+
+left:50%;
+
+transform:translateX(-50%);
+
+background:white;
+
+padding:15px;
+
+border-radius:12px;
+
+box-shadow:0 6px 18px rgba(0,0,0,0.3);
+
+z-index:2000;
+
+width:360px;
+
+display:none;
 
 }
 
-/* Gmaps */
 
-.leaflet-popup-content .gmaps-btn{
+/* GRID FILTER */
 
-display:inline-block;
+.filterGrid{
 
-padding:8px 14px;
+display:grid;
+
+grid-template-columns:1fr 1fr;
+
+gap:15px;
+
+}
+
+
+.filterTitle{
+
+font-weight:bold;
+
+margin-bottom:6px;
+
+border-bottom:1px solid #ddd;
+
+padding-bottom:3px;
+
+}
+
+
+/* SCROLL */
+
+.filterList{
+
+max-height:220px;
+
+overflow:auto;
+
+font-size:14px;
+
+}
+
+
+.filterClose{
+
+margin-top:10px;
+
+width:100%;
+
+padding:8px;
+
+border:none;
 
 background:#0d6efd;
 
-color:white !important;
-
-text-decoration:none;
+color:white;
 
 border-radius:6px;
 
-font-size:13px;
-
-font-weight:600;
+cursor:pointer;
 
 }
 
-/* Mobile */
+
+
+/* MOBILE */
 
 @media (max-width:768px){
 
@@ -156,6 +223,21 @@ height:88vh;
 font-size:16px;
 }
 
+.filterWindow{
+
+left:10px;
+right:10px;
+transform:none;
+width:auto;
+
+}
+
+.filterGrid{
+
+grid-template-columns:1fr;
+
+}
+
 }
 
 </style>
@@ -169,17 +251,51 @@ font-size:16px;
 
 <select id="bridgeSelect"></select>
 
-<button class="btn btn-go" onclick="focusBridge()">
-GO
-</button>
+<button class="btn btn-go" onclick="focusBridge()">GO</button>
 
-<button class="btn btn-gps" onclick="locateUser()">
-Posisi Saat Ini
-</button>
+<button class="btn btn-gps" onclick="locateUser()">Posisi Saat Ini</button>
+
+<button class="btn btn-filter" onclick="toggleFilter()">Filter</button>
 
 </div>
 
 <div id="map"></div>
+
+
+
+<div id="filterWindow" class="filterWindow">
+
+<div class="filterGrid">
+
+
+<div>
+
+<div class="filterTitle">PPK</div>
+
+<div id="ppkFilter" class="filterList"></div>
+
+</div>
+
+
+<div>
+
+<div class="filterTitle">NK S2 2025</div>
+
+<div id="nkFilter" class="filterList"></div>
+
+</div>
+
+
+</div>
+
+
+<button class="filterClose" onclick="toggleFilter()">
+
+Tutup
+
+</button>
+
+</div>
 
 
 
@@ -198,9 +314,8 @@ Posisi Saat Ini
 <script>
 
 
-// ================= MAP =================
+var map=L.map('map').setView([-8.6,115.2],10);
 
-var map = L.map('map').setView([-8.6,115.2],10);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
 attribution:'© OpenStreetMap'
@@ -208,24 +323,23 @@ attribution:'© OpenStreetMap'
 
 
 
-var bridgeMarkers={};
-var allMarkers=[];
-var userMarker=null;
-
-
-/* CLUSTER GROUP */
-
 var clusterGroup=L.markerClusterGroup({
 
 maxClusterRadius:25
 
 });
 
+
 map.addLayer(clusterGroup);
 
 
 
-// Bridge Icon
+var allRows=[];
+var bridgeMarkers={};
+var allMarkers=[];
+var userMarker=null;
+
+
 
 var bridgeIcon=L.icon({
 
@@ -241,8 +355,6 @@ popupAnchor:[0,-35]
 
 
 
-// ================= LOAD EXCEL =================
-
 fetch('Data Jembatan.xlsx')
 
 .then(res=>res.arrayBuffer())
@@ -255,17 +367,26 @@ var sheet=workbook.Sheets[workbook.SheetNames[0]];
 
 var rows=XLSX.utils.sheet_to_json(sheet);
 
+
+allRows=rows;
+
+
 loadBridges(rows);
+
+buildFilter(rows);
+
+restoreFilter();
 
 });
 
 
 
-
-// ================= MARKERS =================
-
-
 function loadBridges(rows){
+
+clusterGroup.clearLayers();
+
+allMarkers=[];
+
 
 rows.forEach(function(row){
 
@@ -286,10 +407,7 @@ icon:bridgeIcon
 clusterGroup.addLayer(marker);
 
 
-
 marker.bindTooltip(row.Nama_Jembatan,{
-
-permanent:false,
 
 direction:"top",
 
@@ -301,11 +419,7 @@ className:"bridge-label"
 marker.bindPopup(generatePopup(row));
 
 
-marker.bridgeName=row.Nama_Jembatan;
-
-
 allMarkers.push(marker);
-
 
 bridgeMarkers[row.Nama_Jembatan]=marker;
 
@@ -330,9 +444,6 @@ placeholder:"Cari Nama Jembatan"
 
 
 
-// ================= TOOLTIP OPTION B =================
-
-
 map.on('zoomend',function(){
 
 var zoom=map.getZoom();
@@ -340,18 +451,17 @@ var zoom=map.getZoom();
 allMarkers.forEach(function(marker){
 
 if(zoom>=15)
+
 marker.openTooltip();
+
 else
+
 marker.closeTooltip();
 
 });
 
 });
 
-
-
-
-// ================= POPUP =================
 
 
 function generatePopup(row){
@@ -410,9 +520,6 @@ Open GMaps
 
 
 
-// ================= GO BUTTON =================
-
-
 function focusBridge(){
 
 var name=$('#bridgeSelect').val();
@@ -435,9 +542,6 @@ bridgeMarkers[name].openPopup();
 
 
 
-// ================= GPS BUTTON =================
-
-
 function locateUser(){
 
 map.locate({
@@ -455,7 +559,9 @@ maxZoom:17
 map.on('locationfound',function(e){
 
 if(userMarker)
+
 map.removeLayer(userMarker);
+
 
 userMarker=L.marker(e.latlng)
 
@@ -473,6 +579,157 @@ map.on('locationerror',function(){
 alert("Tidak bisa mendapatkan lokasi");
 
 });
+
+
+
+function toggleFilter(){
+
+var w=document.getElementById("filterWindow");
+
+w.style.display=
+
+(w.style.display=="block")?
+
+"none":"block";
+
+}
+
+
+
+function buildFilter(rows){
+
+var ppkSet=new Set();
+
+var nkSet=new Set();
+
+
+rows.forEach(function(r){
+
+ppkSet.add(r.PPK);
+
+nkSet.add(r["NK S2 2025"]);
+
+});
+
+
+ppkSet.forEach(function(p){
+
+$('#ppkFilter').append(
+
+`<label>
+
+<input type="checkbox" class="ppkCheck" value="${p}">
+
+${p}
+
+</label><br>`
+
+);
+
+});
+
+
+nkSet.forEach(function(n){
+
+$('#nkFilter').append(
+
+`<label>
+
+<input type="checkbox" class="nkCheck" value="${n}">
+
+${n}
+
+</label><br>`
+
+);
+
+});
+
+
+$('.ppkCheck,.nkCheck').change(applyFilter);
+
+}
+
+
+
+function applyFilter(){
+
+
+var ppk=[];
+
+$('.ppkCheck:checked').each(function(){
+
+ppk.push($(this).val());
+
+});
+
+
+var nk=[];
+
+$('.nkCheck:checked').each(function(){
+
+nk.push($(this).val());
+
+});
+
+
+localStorage.setItem("ppkFilter",JSON.stringify(ppk));
+
+localStorage.setItem("nkFilter",JSON.stringify(nk));
+
+
+var filtered=allRows.filter(function(row){
+
+if(ppk.length>0 && !ppk.includes(row.PPK))
+return false;
+
+if(nk.length>0 && !nk.includes(String(row["NK S2 2025"])))
+return false;
+
+return true;
+
+});
+
+
+loadBridges(filtered);
+
+}
+
+
+
+function restoreFilter(){
+
+
+var ppk=
+
+JSON.parse(localStorage.getItem("ppkFilter")||"[]");
+
+
+var nk=
+
+JSON.parse(localStorage.getItem("nkFilter")||"[]");
+
+
+$('.ppkCheck').each(function(){
+
+if(ppk.includes($(this).val()))
+$(this).prop("checked",true);
+
+});
+
+
+$('.nkCheck').each(function(){
+
+if(nk.includes($(this).val()))
+$(this).prop("checked",true);
+
+});
+
+
+applyFilter();
+
+}
+
 
 
 </script>
