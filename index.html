@@ -592,41 +592,35 @@ document.getElementById(div).innerHTML=html;
 
 function applyFilter(){
 
-
 var ppk=[];
-
 var nk=[];
 
 
 $("#ppkList input:checked").each(function(){
-
-ppk.push(this.value);
-
+ppk.push(String(this.value).trim());
 });
 
 
 $("#nkList input:checked").each(function(){
-
-nk.push(this.value);
-
+nk.push(String(this.value).trim());
 });
 
 
-var filtered=rowsData.filter(function(r){
+var filtered = rowsData.filter(function(r){
 
-return
+var ppkValue = String(r.PPK).trim();
+var nkValue  = String(r["NK S2 2025"]).trim();
 
-(ppk.length==0||ppk.includes(r.PPK))
-
+return (
+(ppk.length===0 || ppk.includes(ppkValue))
 &&
-
-(nk.length==0||nk.includes(String(r["NK S2 2025"])));
+(nk.length===0 || nk.includes(nkValue))
+);
 
 });
 
 
 loadBridges(filtered);
-
 
 toggleFilter();
 
