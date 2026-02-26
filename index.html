@@ -23,7 +23,6 @@ background:#f5f7fa;
 height:92vh;
 }
 
-
 /* TOP PANEL */
 
 .topbar{
@@ -34,11 +33,9 @@ left:50%;
 transform:translateX(-50%);
 
 background:white;
-
 padding:10px 14px;
 
 border-radius:10px;
-
 box-shadow:0 3px 10px rgba(0,0,0,0.2);
 
 display:flex;
@@ -47,38 +44,27 @@ gap:8px;
 z-index:1000;
 }
 
-
 .select2-container{
 width:260px !important;
 }
 
-
 .btn{
-
 border:none;
-
 padding:8px 14px;
-
 border-radius:6px;
-
 font-weight:600;
-
 cursor:pointer;
-
 }
-
 
 .btn-go{
 background:#0d6efd;
 color:white;
 }
 
-
 .btn-gps{
 background:#198754;
 color:white;
 }
-
 
 .btn-filter{
 background:#6c757d;
@@ -86,17 +72,14 @@ color:white;
 }
 
 
-
 /* FILTER POPUP */
 
 .filter-popup{
 
 display:none;
-
 position:absolute;
 
 top:80px;
-
 left:50%;
 
 transform:translateX(-50%);
@@ -119,8 +102,6 @@ overflow:auto;
 
 }
 
-
-
 .popup-content{
 font-size:14px;
 line-height:1.6;
@@ -130,11 +111,9 @@ line-height:1.6;
 .leaflet-popup-content .gmaps-btn{
 
 display:inline-block;
-
 padding:8px 14px;
 
 background:#0d6efd;
-
 color:white !important;
 
 text-decoration:none;
@@ -142,9 +121,7 @@ text-decoration:none;
 border-radius:6px;
 
 font-size:13px;
-
 font-weight:600;
-
 }
 
 
@@ -158,8 +135,36 @@ background:white;
 padding:2px 6px;
 
 border-radius:4px;
+}
+
+
+/* SUMMARY BOX */
+
+.summaryBox{
+
+position:absolute;
+
+bottom:20px;
+left:50%;
+
+transform:translateX(-50%) scale(0.85);
+
+background:white;
+
+padding:12px 16px;
+
+border-radius:10px;
+
+box-shadow:0 3px 10px rgba(0,0,0,0.25);
+
+z-index:1500;
+
+font-size:14px;
+
+min-width:260px;
 
 }
+
 
 
 /* MOBILE */
@@ -169,7 +174,6 @@ border-radius:4px;
 .topbar{
 
 top:5px;
-
 padding:6px 8px;
 
 gap:6px;
@@ -178,12 +182,12 @@ border-radius:8px;
 
 }
 
-
 .select2-container{
+
 width:200px !important;
+
 font-size:13px;
 }
-
 
 .btn{
 
@@ -193,20 +197,21 @@ font-size:12px;
 
 }
 
-
 .leaflet-top.leaflet-left{
+
 margin-top:60px;
+
 }
 
 #map{
+
 height:90vh;
-}
 
 }
 
+}
 
 </style>
-
 </head>
 
 
@@ -261,6 +266,11 @@ Reset
 <div id="map"></div>
 
 
+<div class="summaryBox" id="summaryBox">
+Memuat data...
+</div>
+
+
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
@@ -281,23 +291,17 @@ var map=L.map('map').setView([-8.6,115.2],10);
 
 
 L.tileLayer(
-
 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-
 {attribution:'© OpenStreetMap'}
-
 ).addTo(map);
 
 
 
 var clusterGroup=L.markerClusterGroup({
-
 maxClusterRadius:25
-
 });
 
 map.addLayer(clusterGroup);
-
 
 
 var bridgeIcon=L.icon({
@@ -314,11 +318,8 @@ popupAnchor:[0,-35]
 
 
 var bridgeMarkers={};
-
 var markerObjects=[];
-
 var rowsData=[];
-
 var userMarker=null;
 
 
@@ -347,13 +348,10 @@ function initUI(rows){
 
 $('#bridgeSelect').empty();
 
-
 rows.forEach(r=>{
 
 $('#bridgeSelect').append(
-
 new Option(r.Nama_Jembatan,r.Nama_Jembatan)
-
 );
 
 });
@@ -367,14 +365,12 @@ placeholder:"Cari Nama Jembatan"
 
 
 var ppkSet=new Set();
-
 var nkSet=new Set();
 
 
 rows.forEach(r=>{
 
 ppkSet.add(String(r.PPK).trim());
-
 nkSet.add(String(r["NK S2 2025"]).trim());
 
 });
@@ -383,9 +379,7 @@ nkSet.add(String(r["NK S2 2025"]).trim());
 ppkSet.forEach(v=>{
 
 $("#ppkList").append(
-
 `<label><input type=checkbox value="${v}"> ${v}</label><br>`
-
 );
 
 });
@@ -394,15 +388,14 @@ $("#ppkList").append(
 nkSet.forEach(v=>{
 
 $("#nkList").append(
-
 `<label><input type=checkbox value="${v}"> ${v}</label><br>`
-
 );
 
 });
 
 
 }
+
 
 
 
@@ -416,16 +409,13 @@ markerObjects=[];
 rows.forEach(function(row){
 
 var lat=parseFloat(row.Koordinat_Y);
-
 var lng=parseFloat(row.Koordinat_X);
 
 if(!lat||!lng)return;
 
 
 var marker=L.marker([lat,lng],{
-
 icon:bridgeIcon
-
 });
 
 
@@ -433,13 +423,9 @@ marker.rowData=row;
 
 
 marker.bindTooltip(row.Nama_Jembatan,{
-
 permanent:false,
-
 direction:"top",
-
 className:"bridge-label"
-
 });
 
 
@@ -448,76 +434,144 @@ marker.bindPopup(generatePopup(row));
 
 clusterGroup.addLayer(marker);
 
-
 markerObjects.push(marker);
 
 
 bridgeMarkers[row.Nama_Jembatan]=marker;
 
-
 });
 
+
+updateSummary(markerObjects);
 
 }
 
 
 
-function generatePopup(row){
+function updateSummary(markers){
 
-var gmaps=
+var totalJumlah=0;
+var totalPanjang=0;
 
-`https://www.google.com/maps?q=${row.Koordinat_Y},${row.Koordinat_X}`;
-
-
-return`
-
-<div class="popup-content">
+var nkJumlah={1:0,2:0,3:0,4:0};
+var nkPanjang={1:0,2:0,3:0,4:0};
 
 
-<b style="font-size:16px">
+markers.forEach(function(marker){
 
-${row.Nama_Jembatan}
+var r=marker.rowData;
 
-</b>
+var nk=String(r["NK S2 2025"]).trim();
 
-<br><br>
-
-
-No. Jbt : ${row.No_Jbt}<br>
-
-Tahun Bangun : ${row["Tahun Bangun"]}<br>
-
-Panjang (m) : ${row["Panjang (m)"]}<br>
-
-Lebar Jembatan (m) : ${row["Lebar Jembatan (m)"]}<br>
-
-Lebar Lajur Lalin (m) : ${row["Lebar Lajur Lalin (m)"]}<br>
-
-Jml Bentang : ${row["Jml Bentang"]}<br>
-
-Tipe Bang. Atas : ${row["Tipe Bang. Atas"]}<br>
-
-NK S2 2025 : ${row["NK S2 2025"]}<br>
-
-Ruas Jalan : ${row["Ruas Jalan"]}<br>
-
-PPK : ${row.PPK}<br><br>
+var panjang=parseFloat(r["Panjang (m)"])||0;
 
 
-<a href="${gmaps}"
-
-target="_blank"
-
-class="gmaps-btn">
-
-Open GMaps
-
-</a>
+totalJumlah++;
+totalPanjang+=panjang;
 
 
-</div>
+if(nkJumlah[nk]!=undefined){
 
-`;
+nkJumlah[nk]++;
+nkPanjang[nk]+=panjang;
+
+}
+
+});
+
+
+document.getElementById("summaryBox").innerHTML=
+
+"<b>Jumlah total jembatan :</b> "+totalJumlah+" buah | "+totalPanjang.toFixed(0)+" m<br><br>"+
+
+"NK1 : "+nkJumlah[1]+" buah | "+nkPanjang[1].toFixed(0)+" m<br>"+
+
+"NK2 : "+nkJumlah[2]+" buah | "+nkPanjang[2].toFixed(0)+" m<br>"+
+
+"NK3 : "+nkJumlah[3]+" buah | "+nkPanjang[3].toFixed(0)+" m<br>"+
+
+"NK4 : "+nkJumlah[4]+" buah | "+nkPanjang[4].toFixed(0)+" m";
+
+}
+
+
+
+
+function applyFilter(){
+
+var ppk=[];
+var nk=[];
+
+
+$("#ppkList input:checked").each(function(){
+ppk.push(String(this.value).trim());
+});
+
+
+$("#nkList input:checked").each(function(){
+nk.push(String(this.value).trim());
+});
+
+
+clusterGroup.clearLayers();
+
+var aktif=[];
+
+
+markerObjects.forEach(function(marker){
+
+var r=marker.rowData;
+
+
+var ppkValue=String(r.PPK).trim();
+var nkValue=String(r["NK S2 2025"]).trim();
+
+
+if(
+(ppk.length===0||ppk.includes(ppkValue))
+&&
+(nk.length===0||nk.includes(nkValue))
+){
+
+clusterGroup.addLayer(marker);
+aktif.push(marker);
+
+}
+
+});
+
+
+updateSummary(aktif);
+
+toggleFilter();
+
+}
+
+
+
+
+function resetFilter(){
+
+$("#ppkList input").prop("checked",false);
+$("#nkList input").prop("checked",false);
+
+clusterGroup.clearLayers();
+
+markerObjects.forEach(m=>clusterGroup.addLayer(m));
+
+updateSummary(markerObjects);
+
+}
+
+
+
+function toggleFilter(){
+
+var f=document.getElementById("filterBox");
+
+f.style.display=
+f.style.display==="block"
+? "none":"block";
 
 }
 
@@ -527,15 +581,11 @@ function focusBridge(){
 
 var name=$('#bridgeSelect').val();
 
-
 if(bridgeMarkers[name]){
 
 map.setView(
-
 bridgeMarkers[name].getLatLng(),
-
 17
-
 );
 
 bridgeMarkers[name].openPopup();
@@ -549,11 +599,8 @@ bridgeMarkers[name].openPopup();
 function locateUser(){
 
 map.locate({
-
 setView:true,
-
 maxZoom:17
-
 });
 
 }
@@ -563,108 +610,15 @@ maxZoom:17
 map.on('locationfound',function(e){
 
 if(userMarker)
-
 map.removeLayer(userMarker);
 
 
 userMarker=L.marker(e.latlng)
-
 .addTo(map)
-
 .bindPopup("Posisi Anda")
-
 .openPopup();
 
 });
-
-
-
-function toggleFilter(){
-
-var f=document.getElementById("filterBox");
-
-f.style.display=
-
-f.style.display==="block"
-
-? "none":"block";
-
-}
-
-
-
-function applyFilter(){
-
-
-var ppk=[];
-
-var nk=[];
-
-
-$("#ppkList input:checked").each(function(){
-
-ppk.push(String(this.value).trim());
-
-});
-
-
-$("#nkList input:checked").each(function(){
-
-nk.push(String(this.value).trim());
-
-});
-
-
-clusterGroup.clearLayers();
-
-
-markerObjects.forEach(function(marker){
-
-var r=marker.rowData;
-
-
-var ppkValue=String(r.PPK).trim();
-
-var nkValue=String(r["NK S2 2025"]).trim();
-
-
-if(
-
-(ppk.length===0||ppk.includes(ppkValue))
-
-&&
-
-(nk.length===0||nk.includes(nkValue))
-
-){
-
-clusterGroup.addLayer(marker);
-
-}
-
-});
-
-
-toggleFilter();
-
-}
-
-
-
-function resetFilter(){
-
-$("#ppkList input").prop("checked",false);
-
-$("#nkList input").prop("checked",false);
-
-
-clusterGroup.clearLayers();
-
-
-markerObjects.forEach(m=>clusterGroup.addLayer(m));
-
-}
-
 
 
 map.on('zoomend',function(){
@@ -675,11 +629,8 @@ var zoom=map.getZoom();
 markerObjects.forEach(function(marker){
 
 if(zoom>=15)
-
 marker.openTooltip();
-
 else
-
 marker.closeTooltip();
 
 });
@@ -688,7 +639,6 @@ marker.closeTooltip();
 
 
 </script>
-
 
 </body>
 </html>
