@@ -7,12 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-
-<link rel="stylesheet"
-href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
-
-<link rel="stylesheet"
-href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
 
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
 
@@ -28,97 +24,183 @@ background:#f5f7fa;
 height:92vh;
 }
 
-/* TOPBAR */
+/* TOP PANEL */
 
 .topbar{
+
 position:absolute;
 top:10px;
 left:50%;
 transform:translateX(-50%);
+
 background:white;
+
 padding:10px 14px;
+
 border-radius:10px;
+
 box-shadow:0 3px 10px rgba(0,0,0,0.2);
+
 display:flex;
 gap:8px;
+
 z-index:1000;
 }
+
+/* Dropdown */
 
 .select2-container{
 width:260px !important;
 }
 
-/* BUTTON */
+/* Buttons */
 
 .btn{
+
 border:none;
 padding:8px 14px;
 border-radius:6px;
 font-weight:600;
 cursor:pointer;
+color:white;
+
 }
 
-/* ================= MOBILE ================= */
-
-@media (max-width:768px){
-
-.topbar{
-left:10px;
-right:10px;
-transform:none;
-flex-direction:column;
+.btn-go{
+background:#0d6efd;
 }
 
-.select2-container{
-width:100% !important;
+.btn-gps{
+background:#198754;
 }
 
-#map{
-height:88vh;
+.btn-filter{
+background:#6c757d;
 }
+
+/* Tooltip */
+
+.bridge-label{
+
+font-size:12px;
+font-weight:bold;
+
+background:rgba(255,255,255,0.9);
+
+padding:2px 6px;
+
+border-radius:4px;
+
+}
+
+/* Popup */
 
 .popup-content{
-font-size:16px;
-}
 
-.filterWindow{
-left:10px;
-right:10px;
-transform:none;
-width:auto;
-}
-
-.filterGrid{
-grid-template-columns:1fr;
-}
+font-size:14px;
+line-height:1.6;
 
 }
 
+/* Gmaps button */
 
-/* ================= MOBILE COMPACT ================= */
+.leaflet-popup-content .gmaps-btn{
+
+display:inline-block;
+padding:8px 14px;
+background:#0d6efd;
+
+color:white !important;
+
+text-decoration:none;
+border-radius:6px;
+font-size:13px;
+font-weight:600;
+
+}
+
+
+/* FILTER WINDOW */
+
+.filter-popup{
+
+position:absolute;
+
+top:80px;
+left:50%;
+transform:translateX(-50%);
+
+background:white;
+
+padding:15px;
+
+border-radius:10px;
+
+box-shadow:0 3px 12px rgba(0,0,0,0.3);
+
+display:none;
+
+z-index:2000;
+
+min-width:260px;
+
+max-height:70vh;
+
+overflow:auto;
+
+}
+
+
+/* MOBILE FIX */
 
 @media (max-width:600px){
 
 .topbar{
+
 top:5px;
-left:50%;
-transform:translateX(-50%) scale(0.8);
-transform-origin:top center;
+
 padding:6px 8px;
+
 gap:6px;
+
+border-radius:8px;
+
+flex-direction:column;
+
+width:210px;
+
 }
 
 .select2-container{
-width:220px !important;
+
+width:100% !important;
+
+font-size:13px;
+
 }
 
 .btn{
-padding:6px 10px;
+
+padding:6px 8px;
+
 font-size:12px;
+
+border-radius:5px;
+
 }
 
+#map{
+
+height:90vh;
+
+}
+
+/* Turunkan tombol zoom */
+
 .leaflet-top.leaflet-left{
-margin-top:70px;
+
+margin-top:60px;
+
 }
 
 }
@@ -130,54 +212,49 @@ margin-top:70px;
 
 <body>
 
+
 <div class="topbar">
 
 <select id="bridgeSelect"></select>
 
-<button class="btn btn-go" onclick="focusBridge()">GO</button>
+<button class="btn btn-go" onclick="focusBridge()">
+GO
+</button>
 
-<button class="btn btn-gps" onclick="locateUser()">Posisi Saat Ini</button>
+<button class="btn btn-gps" onclick="locateUser()">
+Posisi Saat Ini
+</button>
 
-<button class="btn btn-filter" onclick="toggleFilter()">Filter</button>
+<button class="btn btn-filter" onclick="toggleFilter()">
+Filter
+</button>
 
 </div>
+
+
 
 <div id="map"></div>
 
 
 
-<div id="filterWindow" class="filterWindow">
+<div class="filter-popup" id="filterBox">
 
-<div class="filterGrid">
+<b>Filter PPK</b>
+<div id="ppkList"></div>
 
+<br>
 
-<div>
+<b>Filter NK S2 2025</b>
+<div id="nkList"></div>
 
-<div class="filterTitle">PPK</div>
+<br>
 
-<div id="ppkFilter" class="filterList"></div>
-
-</div>
-
-
-<div>
-
-<div class="filterTitle">NK S2 2025</div>
-
-<div id="nkFilter" class="filterList"></div>
-
-</div>
-
-
-</div>
-
-
-<button class="filterClose" onclick="resetFilter()">
-Reset Filter
+<button class="btn btn-go" onclick="applyFilter()">
+Terapkan
 </button>
 
-<button class="filterClose" onclick="toggleFilter()">
-Tutup
+<button class="btn btn-filter" onclick="resetFilter()">
+Reset
 </button>
 
 </div>
@@ -186,45 +263,52 @@ Tutup
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
+<script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
-<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-
 
 
 <script>
 
 
+// MAP
+
 var map=L.map('map').setView([-8.6,115.2],10);
 
-
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+
 attribution:'© OpenStreetMap'
+
 }).addTo(map);
 
 
 
-var clusterGroup=L.markerClusterGroup({
+// CLUSTER
+
+var cluster=L.markerClusterGroup({
 
 maxClusterRadius:25
 
 });
 
-
-map.addLayer(clusterGroup);
-
+map.addLayer(cluster);
 
 
-var allRows=[];
+
 var bridgeMarkers={};
-var allMarkers=[];
+
+var rowsData=[];
+
 var userMarker=null;
 
 
+
+// ICON
 
 var bridgeIcon=L.icon({
 
@@ -240,6 +324,9 @@ popupAnchor:[0,-35]
 
 
 
+// LOAD EXCEL
+
+
 fetch('Data Jembatan.xlsx')
 
 .then(res=>res.arrayBuffer())
@@ -252,34 +339,47 @@ var sheet=workbook.Sheets[workbook.SheetNames[0]];
 
 var rows=XLSX.utils.sheet_to_json(sheet);
 
-
-allRows=rows;
-
+rowsData=rows;
 
 loadBridges(rows);
-
-buildFilter(rows);
-
-restoreFilter();
 
 });
 
 
 
+
+// LOAD BRIDGES
+
+
 function loadBridges(rows){
 
-clusterGroup.clearLayers();
 
-allMarkers=[];
+cluster.clearLayers();
+
+$('#bridgeSelect').empty();
+
+
+var ppkSet=new Set();
+
+var nkSet=new Set();
 
 
 rows.forEach(function(row){
+
 
 var lat=parseFloat(row.Koordinat_Y);
 
 var lng=parseFloat(row.Koordinat_X);
 
+
 if(!lat||!lng)return;
+
+
+
+ppkSet.add(row.PPK);
+
+nkSet.add(row["NK S2 2025"]);
+
 
 
 var marker=L.marker([lat,lng],{
@@ -289,24 +389,19 @@ icon:bridgeIcon
 });
 
 
-clusterGroup.addLayer(marker);
-
-
-marker.bindTooltip(row.Nama_Jembatan,{
-
-direction:"top",
-
-className:"bridge-label"
-
-});
-
-
 marker.bindPopup(generatePopup(row));
 
 
-allMarkers.push(marker);
+marker.bridgeName=row.Nama_Jembatan;
+
+
+
+cluster.addLayer(marker);
+
+
 
 bridgeMarkers[row.Nama_Jembatan]=marker;
+
 
 
 $('#bridgeSelect').append(
@@ -325,39 +420,32 @@ placeholder:"Cari Nama Jembatan"
 
 });
 
+
+
+createCheckbox("ppkList",ppkSet);
+
+createCheckbox("nkList",nkSet);
+
 }
 
 
 
-map.on('zoomend',function(){
 
-var zoom=map.getZoom();
-
-allMarkers.forEach(function(marker){
-
-if(zoom>=15)
-
-marker.openTooltip();
-
-else
-
-marker.closeTooltip();
-
-});
-
-});
-
+// POPUP
 
 
 function generatePopup(row){
+
 
 var gmaps=
 
 `https://www.google.com/maps?q=${row.Koordinat_Y},${row.Koordinat_X}`;
 
+
 return `
 
 <div class="popup-content">
+
 
 <b style="font-size:16px">
 
@@ -366,6 +454,7 @@ ${row.Nama_Jembatan}
 </b>
 
 <br><br>
+
 
 No. Jbt : ${row.No_Jbt}<br>
 
@@ -387,6 +476,7 @@ Ruas Jalan : ${row["Ruas Jalan"]}<br>
 
 PPK : ${row.PPK}<br><br>
 
+
 <a href="${gmaps}"
 
 target="_blank"
@@ -397,6 +487,7 @@ Open GMaps
 
 </a>
 
+
 </div>
 
 `;
@@ -405,26 +496,28 @@ Open GMaps
 
 
 
+// GO
+
+
 function focusBridge(){
 
 var name=$('#bridgeSelect').val();
 
-if(bridgeMarkers[name]){
+var marker=bridgeMarkers[name];
 
-map.setView(
+if(marker){
 
-bridgeMarkers[name].getLatLng(),
+map.setView(marker.getLatLng(),17);
 
-17
-
-);
-
-bridgeMarkers[name].openPopup();
+marker.openPopup();
 
 }
 
 }
 
+
+
+// GPS
 
 
 function locateUser(){
@@ -438,7 +531,6 @@ maxZoom:17
 });
 
 }
-
 
 
 map.on('locationfound',function(e){
@@ -459,79 +551,40 @@ userMarker=L.marker(e.latlng)
 });
 
 
-map.on('locationerror',function(){
 
-alert("Tidak bisa mendapatkan lokasi");
 
-});
-
+// FILTER
 
 
 function toggleFilter(){
 
-var w=document.getElementById("filterWindow");
+var box=document.getElementById("filterBox");
 
-w.style.display=
+box.style.display=
 
-(w.style.display=="block")?
-
-"none":"block";
+box.style.display=="block"?"none":"block";
 
 }
 
 
 
-function buildFilter(rows){
+function createCheckbox(div,set){
 
-var ppkSet=new Set();
+var html="";
 
-var nkSet=new Set();
+set.forEach(function(val){
 
+html+=`<label>
 
-rows.forEach(function(r){
+<input type="checkbox" value="${val}">
 
-ppkSet.add(r.PPK);
+${val}
 
-nkSet.add(r["NK S2 2025"]);
-
-});
-
-
-ppkSet.forEach(function(p){
-
-$('#ppkFilter').append(
-
-`<label>
-
-<input type="checkbox" class="ppkCheck" value="${p}">
-
-${p}
-
-</label><br>`
-
-);
+</label><br>`;
 
 });
 
-
-nkSet.forEach(function(n){
-
-$('#nkFilter').append(
-
-`<label>
-
-<input type="checkbox" class="nkCheck" value="${n}">
-
-${n}
-
-</label><br>`
-
-);
-
-});
-
-
-$('.ppkCheck,.nkCheck').change(applyFilter);
+document.getElementById(div).innerHTML=html;
 
 }
 
@@ -542,92 +595,54 @@ function applyFilter(){
 
 var ppk=[];
 
-$('.ppkCheck:checked').each(function(){
-
-ppk.push($(this).val());
-
-});
-
-
 var nk=[];
 
-$('.nkCheck:checked').each(function(){
 
-nk.push($(this).val());
+$("#ppkList input:checked").each(function(){
+
+ppk.push(this.value);
 
 });
 
 
-localStorage.setItem("ppkFilter",JSON.stringify(ppk));
+$("#nkList input:checked").each(function(){
 
-localStorage.setItem("nkFilter",JSON.stringify(nk));
+nk.push(this.value);
+
+});
 
 
-var filtered=allRows.filter(function(row){
+var filtered=rowsData.filter(function(r){
 
-if(ppk.length>0 && !ppk.includes(row.PPK))
-return false;
+return
 
-if(nk.length>0 && !nk.includes(String(row["NK S2 2025"])))
-return false;
+(ppk.length==0||ppk.includes(r.PPK))
 
-return true;
+&&
+
+(nk.length==0||nk.includes(String(r["NK S2 2025"])));
 
 });
 
 
 loadBridges(filtered);
 
-}
 
-
-
-function restoreFilter(){
-
-
-var ppk=
-
-JSON.parse(localStorage.getItem("ppkFilter")||"[]");
-
-
-var nk=
-
-JSON.parse(localStorage.getItem("nkFilter")||"[]");
-
-
-$('.ppkCheck').each(function(){
-
-if(ppk.includes($(this).val()))
-$(this).prop("checked",true);
-
-});
-
-
-$('.nkCheck').each(function(){
-
-if(nk.includes($(this).val()))
-$(this).prop("checked",true);
-
-});
-
-
-applyFilter();
+toggleFilter();
 
 }
+
+
+
 
 function resetFilter(){
 
-$('.ppkCheck').prop('checked',false);
+loadBridges(rowsData);
 
-$('.nkCheck').prop('checked',false);
-
-localStorage.removeItem("ppkFilter");
-
-localStorage.removeItem("nkFilter");
-
-loadBridges(allRows);
+toggleFilter();
 
 }
+
 
 </script>
 
