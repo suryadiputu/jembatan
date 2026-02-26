@@ -258,7 +258,36 @@ grid-template-columns:1fr;
 }
 
 }
+/* ================= MOBILE COMPACT ================= */
 
+@media (max-width: 600px) {
+
+.topbar{
+    top:5px;
+    left:50%;
+    transform:translateX(-50%) scale(0.8);
+    transform-origin:top center;
+    padding:6px 8px;
+    gap:6px;
+}
+
+/* Dropdown lebih kecil */
+.select2-container{
+    width:220px !important;
+}
+
+/* Tombol lebih kecil */
+.btn{
+    padding:6px 10px;
+    font-size:12px;
+}
+
+/* Supaya tidak tabrakan tombol zoom */
+.leaflet-top.leaflet-left{
+    margin-top:70px;
+}
+
+}
 </style>
 </style>
 
