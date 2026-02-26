@@ -2,221 +2,557 @@
 <html>
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Peta Aset Jembatan</title>
 
-<title>Peta Jembatan</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
 
 <style>
 
 body{
 margin:0;
-font-family:Arial;
+font-family:Segoe UI,Arial;
+background:#f5f7fa;
 }
 
 #map{
-height:100vh;
+height:92vh;
 }
 
-/* ===== KOTAK FILTER ===== */
 
-.controlBox{
+/* TOP PANEL */
+
+.topbar{
 
 position:absolute;
-
 top:10px;
 left:50%;
-
-transform:translateX(-50%) scale(0.8);
-transform-origin:top center;
+transform:translateX(-50%);
 
 background:white;
-padding:12px;
 
-border-radius:12px;
+padding:10px 14px;
 
-box-shadow:0px 0px 10px rgba(0,0,0,0.3);
+border-radius:10px;
+
+box-shadow:0 3px 10px rgba(0,0,0,0.2);
+
+display:flex;
+gap:8px;
 
 z-index:1000;
+}
 
-text-align:center;
+
+.select2-container{
+width:260px !important;
+}
+
+
+.btn{
+
+border:none;
+
+padding:8px 14px;
+
+border-radius:6px;
+
+font-weight:600;
+
+cursor:pointer;
 
 }
 
-/* ===== KOTAK SUMMARY ===== */
 
-.summaryBox{
+.btn-go{
+background:#0d6efd;
+color:white;
+}
+
+
+.btn-gps{
+background:#198754;
+color:white;
+}
+
+
+.btn-filter{
+background:#6c757d;
+color:white;
+}
+
+
+
+/* FILTER POPUP */
+
+.filter-popup{
+
+display:none;
 
 position:absolute;
 
-bottom:20px;
+top:80px;
+
 left:50%;
 
-transform:translateX(-50%) scale(0.8);
-transform-origin:bottom center;
+transform:translateX(-50%);
 
 background:white;
 
-padding:12px;
+padding:16px;
 
-border-radius:12px;
+border-radius:10px;
 
-box-shadow:0px 0px 10px rgba(0,0,0,0.3);
+box-shadow:0 4px 15px rgba(0,0,0,0.3);
 
-z-index:1000;
+z-index:2000;
 
-text-align:left;
+width:300px;
 
+max-height:70vh;
+
+overflow:auto;
+
+}
+
+
+
+.popup-content{
 font-size:14px;
+line-height:1.6;
+}
 
-min-width:260px;
+
+.leaflet-popup-content .gmaps-btn{
+
+display:inline-block;
+
+padding:8px 14px;
+
+background:#0d6efd;
+
+color:white !important;
+
+text-decoration:none;
+
+border-radius:6px;
+
+font-size:13px;
+
+font-weight:600;
 
 }
 
 
+.bridge-label{
 
-select,button{
+font-size:12px;
+font-weight:bold;
 
-padding:6px;
+background:white;
 
-margin:3px;
+padding:2px 6px;
 
-font-size:14px;
+border-radius:4px;
 
-width:200px;
+}
+
+
+/* MOBILE */
+
+@media (max-width:600px){
+
+.topbar{
+
+top:5px;
+
+padding:6px 8px;
+
+gap:6px;
+
+border-radius:8px;
 
 }
 
-button{
 
-width:95px;
+.select2-container{
+width:200px !important;
+font-size:13px;
+}
+
+
+.btn{
+
+padding:6px 8px;
+
+font-size:12px;
 
 }
+
+
+.leaflet-top.leaflet-left{
+margin-top:60px;
+}
+
+#map{
+height:90vh;
+}
+
+}
+
 
 </style>
 
 </head>
 
+
 <body>
 
 
-<div class="controlBox">
+<div class="topbar">
 
-<select id="filterNama">
-<option value="">Semua Jembatan</option>
-</select>
+<select id="bridgeSelect"></select>
 
-<br>
+<button class="btn btn-go" onclick="focusBridge()">
+GO
+</button>
 
-<select id="filterNK">
-<option value="">Semua NK</option>
-<option value="1">NK 1</option>
-<option value="2">NK 2</option>
-<option value="3">NK 3</option>
-<option value="4">NK 4</option>
-</select>
+<button class="btn btn-gps" onclick="locateUser()">
+Posisi Saat Ini
+</button>
 
-<br>
-
-<select id="filterKecamatan">
-<option value="">Semua Kecamatan</option>
-</select>
-
-<br>
-
-<button onclick="applyFilter()">Filter</button>
-
-<button onclick="resetFilter()">Reset</button>
+<button class="btn btn-filter" onclick="toggleFilter()">
+Filter
+</button>
 
 </div>
 
+
+
+<div class="filter-popup" id="filterBox">
+
+<b>Filter PPK</b>
+
+<div id="ppkList"></div>
+
+<br>
+
+<b>Filter NK S2 2025</b>
+
+<div id="nkList"></div>
+
+<br>
+
+<button class="btn btn-go" onclick="applyFilter()">
+Terapkan
+</button>
+
+<button class="btn btn-filter" onclick="resetFilter()">
+Reset
+</button>
+
+</div>
 
 
 <div id="map"></div>
 
 
 
-<div class="summaryBox" id="summary">
-
-Memuat data...
-
-</div>
-
-
-
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 
 
 <script>
 
-var map=L.map('map').setView([-7.0,109.0],9);
+
+var map=L.map('map').setView([-8.6,115.2],10);
+
 
 L.tileLayer(
+
 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-{maxZoom:19}
+
+{attribution:'© OpenStreetMap'}
+
 ).addTo(map);
 
 
 
-var markers=[];
-var allData=[];
+var clusterGroup=L.markerClusterGroup({
+
+maxClusterRadius:25
+
+});
+
+map.addLayer(clusterGroup);
 
 
 
-fetch('jembatan.geojson')
+var bridgeIcon=L.icon({
 
-.then(res=>res.json())
+iconUrl:"bridge.png",
+
+iconSize:[40,40],
+
+iconAnchor:[20,40],
+
+popupAnchor:[0,-35]
+
+});
+
+
+var bridgeMarkers={};
+
+var markerObjects=[];
+
+var rowsData=[];
+
+var userMarker=null;
+
+
+
+fetch('Data Jembatan.xlsx')
+
+.then(res=>res.arrayBuffer())
 
 .then(data=>{
 
-allData=data.features;
+var workbook=XLSX.read(data);
 
-isiDropdown();
+var sheet=workbook.Sheets[workbook.SheetNames[0]];
 
-tampilkanData(allData);
+rowsData=XLSX.utils.sheet_to_json(sheet);
 
-});
+initUI(rowsData);
 
-
-
-function isiDropdown(){
-
-var namaSet=new Set();
-var kecSet=new Set();
-
-
-allData.forEach(f=>{
-
-namaSet.add(f.properties.nama);
-
-kecSet.add(f.properties.kecamatan);
+loadBridges(rowsData);
 
 });
 
 
-var namaSelect=document.getElementById("filterNama");
-var kecSelect=document.getElementById("filterKecamatan");
+
+function initUI(rows){
+
+$('#bridgeSelect').empty();
 
 
-namaSet.forEach(n=>{
+rows.forEach(r=>{
 
-var o=document.createElement("option");
-o.value=n;
-o.text=n;
+$('#bridgeSelect').append(
 
-namaSelect.appendChild(o);
+new Option(r.Nama_Jembatan,r.Nama_Jembatan)
+
+);
 
 });
 
 
-kecSet.forEach(k=>{
+$('#bridgeSelect').select2({
 
-var o=document.createElement("option");
-o.value=k;
-o.text=k;
+placeholder:"Cari Nama Jembatan"
 
-kecSelect.appendChild(o);
+});
+
+
+var ppkSet=new Set();
+
+var nkSet=new Set();
+
+
+rows.forEach(r=>{
+
+ppkSet.add(String(r.PPK).trim());
+
+nkSet.add(String(r["NK S2 2025"]).trim());
+
+});
+
+
+ppkSet.forEach(v=>{
+
+$("#ppkList").append(
+
+`<label><input type=checkbox value="${v}"> ${v}</label><br>`
+
+);
+
+});
+
+
+nkSet.forEach(v=>{
+
+$("#nkList").append(
+
+`<label><input type=checkbox value="${v}"> ${v}</label><br>`
+
+);
+
+});
+
+
+}
+
+
+
+function loadBridges(rows){
+
+clusterGroup.clearLayers();
+
+markerObjects=[];
+
+
+rows.forEach(function(row){
+
+var lat=parseFloat(row.Koordinat_Y);
+
+var lng=parseFloat(row.Koordinat_X);
+
+if(!lat||!lng)return;
+
+
+var marker=L.marker([lat,lng],{
+
+icon:bridgeIcon
+
+});
+
+
+marker.rowData=row;
+
+
+marker.bindTooltip(row.Nama_Jembatan,{
+
+permanent:false,
+
+direction:"top",
+
+className:"bridge-label"
+
+});
+
+
+marker.bindPopup(generatePopup(row));
+
+
+clusterGroup.addLayer(marker);
+
+
+markerObjects.push(marker);
+
+
+bridgeMarkers[row.Nama_Jembatan]=marker;
+
+
+});
+
+
+}
+
+
+
+function generatePopup(row){
+
+var gmaps=
+
+`https://www.google.com/maps?q=${row.Koordinat_Y},${row.Koordinat_X}`;
+
+
+return`
+
+<div class="popup-content">
+
+
+<b style="font-size:16px">
+
+${row.Nama_Jembatan}
+
+</b>
+
+<br><br>
+
+
+No. Jbt : ${row.No_Jbt}<br>
+
+Tahun Bangun : ${row["Tahun Bangun"]}<br>
+
+Panjang (m) : ${row["Panjang (m)"]}<br>
+
+Lebar Jembatan (m) : ${row["Lebar Jembatan (m)"]}<br>
+
+Lebar Lajur Lalin (m) : ${row["Lebar Lajur Lalin (m)"]}<br>
+
+Jml Bentang : ${row["Jml Bentang"]}<br>
+
+Tipe Bang. Atas : ${row["Tipe Bang. Atas"]}<br>
+
+NK S2 2025 : ${row["NK S2 2025"]}<br>
+
+Ruas Jalan : ${row["Ruas Jalan"]}<br>
+
+PPK : ${row.PPK}<br><br>
+
+
+<a href="${gmaps}"
+
+target="_blank"
+
+class="gmaps-btn">
+
+Open GMaps
+
+</a>
+
+
+</div>
+
+`;
+
+}
+
+
+
+function focusBridge(){
+
+var name=$('#bridgeSelect').val();
+
+
+if(bridgeMarkers[name]){
+
+map.setView(
+
+bridgeMarkers[name].getLatLng(),
+
+17
+
+);
+
+bridgeMarkers[name].openPopup();
+
+}
+
+}
+
+
+
+function locateUser(){
+
+map.locate({
+
+setView:true,
+
+maxZoom:17
 
 });
 
@@ -224,96 +560,34 @@ kecSelect.appendChild(o);
 
 
 
-function tampilkanData(data){
+map.on('locationfound',function(e){
+
+if(userMarker)
+
+map.removeLayer(userMarker);
 
 
-markers.forEach(m=>map.removeLayer(m));
+userMarker=L.marker(e.latlng)
 
-markers=[];
-
-
-var totalJumlah=0;
-var totalPanjang=0;
-
-
-var nkJumlah={1:0,2:0,3:0,4:0};
-var nkPanjang={1:0,2:0,3:0,4:0};
-
-
-
-data.forEach(f=>{
-
-
-var lat=f.geometry.coordinates[1];
-var lon=f.geometry.coordinates[0];
-
-var nama=f.properties.nama;
-var nk=f.properties.nk;
-var kec=f.properties.kecamatan;
-
-var panjang=parseFloat(f.properties.panjang)||0;
-
-
-
-var marker=L.marker([lat,lon])
 .addTo(map)
-.bindPopup(
 
-"<b>"+nama+"</b><br>"+
-"Kecamatan : "+kec+"<br>"+
-"NK : "+nk+"<br>"+
-"Panjang : "+panjang+" m"
+.bindPopup("Posisi Anda")
 
-);
-
-
-markers.push(marker);
-
-
-
-totalJumlah++;
-
-totalPanjang+=panjang;
-
-
-nkJumlah[nk]++;
-
-nkPanjang[nk]+=panjang;
-
+.openPopup();
 
 });
 
 
-updateSummary(
-totalJumlah,
-totalPanjang,
-nkJumlah,
-nkPanjang
-);
 
+function toggleFilter(){
 
-}
+var f=document.getElementById("filterBox");
 
+f.style.display=
 
+f.style.display==="block"
 
-function updateSummary(jumlah,panjang,nkJumlah,nkPanjang){
-
-document.getElementById("summary").innerHTML=
-
-
-"<b>Total Jembatan</b><br>"+
-
-jumlah+" buah | "+panjang.toFixed(1)+" m<br><br>"+
-
-
-"NK1 : "+nkJumlah[1]+" buah | "+nkPanjang[1].toFixed(1)+" m<br>"+
-
-"NK2 : "+nkJumlah[2]+" buah | "+nkPanjang[2].toFixed(1)+" m<br>"+
-
-"NK3 : "+nkJumlah[3]+" buah | "+nkPanjang[3].toFixed(1)+" m<br>"+
-
-"NK4 : "+nkJumlah[4]+" buah | "+nkPanjang[4].toFixed(1)+" m";
-
+? "none":"block";
 
 }
 
@@ -322,40 +596,56 @@ jumlah+" buah | "+panjang.toFixed(1)+" m<br><br>"+
 function applyFilter(){
 
 
-var nama=document.getElementById("filterNama").value;
+var ppk=[];
 
-var nk=document.getElementById("filterNK").value;
-
-var kec=document.getElementById("filterKecamatan").value;
+var nk=[];
 
 
+$("#ppkList input:checked").each(function(){
 
-var hasil=allData.filter(f=>{
-
-
-var cocok=true;
-
-
-if(nama!="")
-cocok=cocok && f.properties.nama==nama;
-
-
-if(nk!="")
-cocok=cocok && f.properties.nk==nk;
-
-
-if(kec!="")
-cocok=cocok && f.properties.kecamatan==kec;
-
-
-return cocok;
-
+ppk.push(String(this.value).trim());
 
 });
 
 
-tampilkanData(hasil);
+$("#nkList input:checked").each(function(){
 
+nk.push(String(this.value).trim());
+
+});
+
+
+clusterGroup.clearLayers();
+
+
+markerObjects.forEach(function(marker){
+
+var r=marker.rowData;
+
+
+var ppkValue=String(r.PPK).trim();
+
+var nkValue=String(r["NK S2 2025"]).trim();
+
+
+if(
+
+(ppk.length===0||ppk.includes(ppkValue))
+
+&&
+
+(nk.length===0||nk.includes(nkValue))
+
+){
+
+clusterGroup.addLayer(marker);
+
+}
+
+});
+
+
+toggleFilter();
 
 }
 
@@ -363,15 +653,38 @@ tampilkanData(hasil);
 
 function resetFilter(){
 
-document.getElementById("filterNama").value="";
-document.getElementById("filterNK").value="";
-document.getElementById("filterKecamatan").value="";
+$("#ppkList input").prop("checked",false);
+
+$("#nkList input").prop("checked",false);
 
 
-tampilkanData(allData);
+clusterGroup.clearLayers();
+
+
+markerObjects.forEach(m=>clusterGroup.addLayer(m));
 
 }
 
+
+
+map.on('zoomend',function(){
+
+var zoom=map.getZoom();
+
+
+markerObjects.forEach(function(marker){
+
+if(zoom>=15)
+
+marker.openTooltip();
+
+else
+
+marker.closeTooltip();
+
+});
+
+});
 
 
 </script>
