@@ -9,7 +9,6 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
-
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
 
 <style>
@@ -23,6 +22,7 @@ background:#f5f7fa;
 #map{
 height:92vh;
 }
+
 
 /* TOP PANEL */
 
@@ -47,102 +47,71 @@ gap:8px;
 z-index:1000;
 }
 
-/* Dropdown */
 
 .select2-container{
 width:260px !important;
 }
 
-/* Buttons */
 
 .btn{
 
 border:none;
+
 padding:8px 14px;
+
 border-radius:6px;
+
 font-weight:600;
+
 cursor:pointer;
-color:white;
 
 }
+
 
 .btn-go{
 background:#0d6efd;
+color:white;
 }
+
 
 .btn-gps{
 background:#198754;
+color:white;
 }
+
 
 .btn-filter{
 background:#6c757d;
-}
-
-/* Tooltip */
-
-.bridge-label{
-
-font-size:12px;
-font-weight:bold;
-
-background:rgba(255,255,255,0.9);
-
-padding:2px 6px;
-
-border-radius:4px;
-
-}
-
-/* Popup */
-
-.popup-content{
-
-font-size:14px;
-line-height:1.6;
-
-}
-
-/* Gmaps button */
-
-.leaflet-popup-content .gmaps-btn{
-
-display:inline-block;
-padding:8px 14px;
-background:#0d6efd;
-
-color:white !important;
-
-text-decoration:none;
-border-radius:6px;
-font-size:13px;
-font-weight:600;
-
+color:white;
 }
 
 
-/* FILTER WINDOW */
+
+/* FILTER POPUP */
 
 .filter-popup{
+
+display:none;
 
 position:absolute;
 
 top:80px;
+
 left:50%;
+
 transform:translateX(-50%);
 
 background:white;
 
-padding:15px;
+padding:16px;
 
 border-radius:10px;
 
-box-shadow:0 3px 12px rgba(0,0,0,0.3);
-
-display:none;
+box-shadow:0 4px 15px rgba(0,0,0,0.3);
 
 z-index:2000;
 
-min-width:260px;
+width:300px;
 
 max-height:70vh;
 
@@ -151,7 +120,49 @@ overflow:auto;
 }
 
 
-/* MOBILE FIX */
+
+.popup-content{
+font-size:14px;
+line-height:1.6;
+}
+
+
+.leaflet-popup-content .gmaps-btn{
+
+display:inline-block;
+
+padding:8px 14px;
+
+background:#0d6efd;
+
+color:white !important;
+
+text-decoration:none;
+
+border-radius:6px;
+
+font-size:13px;
+
+font-weight:600;
+
+}
+
+
+.bridge-label{
+
+font-size:12px;
+font-weight:bold;
+
+background:white;
+
+padding:2px 6px;
+
+border-radius:4px;
+
+}
+
+
+/* MOBILE */
 
 @media (max-width:600px){
 
@@ -165,19 +176,14 @@ gap:6px;
 
 border-radius:8px;
 
-flex-direction:column;
-
-width:210px;
-
 }
+
 
 .select2-container{
-
-width:100% !important;
-
+width:200px !important;
 font-size:13px;
-
 }
+
 
 .btn{
 
@@ -185,25 +191,19 @@ padding:6px 8px;
 
 font-size:12px;
 
-border-radius:5px;
+}
 
+
+.leaflet-top.leaflet-left{
+margin-top:60px;
 }
 
 #map{
-
 height:90vh;
-
-}
-
-/* Turunkan tombol zoom */
-
-.leaflet-top.leaflet-left{
-
-margin-top:60px;
-
 }
 
 }
+
 
 </style>
 
@@ -233,18 +233,16 @@ Filter
 
 
 
-<div id="map"></div>
-
-
-
 <div class="filter-popup" id="filterBox">
 
 <b>Filter PPK</b>
+
 <div id="ppkList"></div>
 
 <br>
 
 <b>Filter NK S2 2025</b>
+
 <div id="nkList"></div>
 
 <br>
@@ -258,6 +256,9 @@ Reset
 </button>
 
 </div>
+
+
+<div id="map"></div>
 
 
 
@@ -276,39 +277,28 @@ Reset
 <script>
 
 
-// MAP
-
 var map=L.map('map').setView([-8.6,115.2],10);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
 
-attribution:'© OpenStreetMap'
+L.tileLayer(
 
-}).addTo(map);
+'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+
+{attribution:'© OpenStreetMap'}
+
+).addTo(map);
 
 
 
-// CLUSTER
-
-var cluster=L.markerClusterGroup({
+var clusterGroup=L.markerClusterGroup({
 
 maxClusterRadius:25
 
 });
 
-map.addLayer(cluster);
+map.addLayer(clusterGroup);
 
 
-
-var bridgeMarkers={};
-
-var rowsData=[];
-
-var userMarker=null;
-
-
-
-// ICON
 
 var bridgeIcon=L.icon({
 
@@ -323,8 +313,14 @@ popupAnchor:[0,-35]
 });
 
 
+var bridgeMarkers={};
 
-// LOAD EXCEL
+var markerObjects=[];
+
+var rowsData=[];
+
+var userMarker=null;
+
 
 
 fetch('Data Jembatan.xlsx')
@@ -337,79 +333,28 @@ var workbook=XLSX.read(data);
 
 var sheet=workbook.Sheets[workbook.SheetNames[0]];
 
-var rows=XLSX.utils.sheet_to_json(sheet);
+rowsData=XLSX.utils.sheet_to_json(sheet);
 
-rowsData=rows;
+initUI(rowsData);
 
-loadBridges(rows);
+loadBridges(rowsData);
 
 });
 
 
 
-
-// LOAD BRIDGES
-
-
-function loadBridges(rows){
-
-
-cluster.clearLayers();
+function initUI(rows){
 
 $('#bridgeSelect').empty();
 
 
-var ppkSet=new Set();
-
-var nkSet=new Set();
-
-
-rows.forEach(function(row){
-
-
-var lat=parseFloat(row.Koordinat_Y);
-
-var lng=parseFloat(row.Koordinat_X);
-
-
-if(!lat||!lng)return;
-
-
-
-ppkSet.add(row.PPK);
-
-nkSet.add(row["NK S2 2025"]);
-
-
-
-var marker=L.marker([lat,lng],{
-
-icon:bridgeIcon
-
-});
-
-
-marker.bindPopup(generatePopup(row));
-
-
-marker.bridgeName=row.Nama_Jembatan;
-
-
-
-cluster.addLayer(marker);
-
-
-
-bridgeMarkers[row.Nama_Jembatan]=marker;
-
-
+rows.forEach(r=>{
 
 $('#bridgeSelect').append(
 
-new Option(row.Nama_Jembatan,row.Nama_Jembatan)
+new Option(r.Nama_Jembatan,r.Nama_Jembatan)
 
 );
-
 
 });
 
@@ -421,28 +366,110 @@ placeholder:"Cari Nama Jembatan"
 });
 
 
+var ppkSet=new Set();
 
-createCheckbox("ppkList",ppkSet);
+var nkSet=new Set();
 
-createCheckbox("nkList",nkSet);
+
+rows.forEach(r=>{
+
+ppkSet.add(String(r.PPK).trim());
+
+nkSet.add(String(r["NK S2 2025"]).trim());
+
+});
+
+
+ppkSet.forEach(v=>{
+
+$("#ppkList").append(
+
+`<label><input type=checkbox value="${v}"> ${v}</label><br>`
+
+);
+
+});
+
+
+nkSet.forEach(v=>{
+
+$("#nkList").append(
+
+`<label><input type=checkbox value="${v}"> ${v}</label><br>`
+
+);
+
+});
+
 
 }
 
 
 
+function loadBridges(rows){
 
-// POPUP
+clusterGroup.clearLayers();
+
+markerObjects=[];
+
+
+rows.forEach(function(row){
+
+var lat=parseFloat(row.Koordinat_Y);
+
+var lng=parseFloat(row.Koordinat_X);
+
+if(!lat||!lng)return;
+
+
+var marker=L.marker([lat,lng],{
+
+icon:bridgeIcon
+
+});
+
+
+marker.rowData=row;
+
+
+marker.bindTooltip(row.Nama_Jembatan,{
+
+permanent:false,
+
+direction:"top",
+
+className:"bridge-label"
+
+});
+
+
+marker.bindPopup(generatePopup(row));
+
+
+clusterGroup.addLayer(marker);
+
+
+markerObjects.push(marker);
+
+
+bridgeMarkers[row.Nama_Jembatan]=marker;
+
+
+});
+
+
+}
+
 
 
 function generatePopup(row){
-
 
 var gmaps=
 
 `https://www.google.com/maps?q=${row.Koordinat_Y},${row.Koordinat_X}`;
 
 
-return `
+return`
 
 <div class="popup-content">
 
@@ -496,28 +523,27 @@ Open GMaps
 
 
 
-// GO
-
-
 function focusBridge(){
 
 var name=$('#bridgeSelect').val();
 
-var marker=bridgeMarkers[name];
 
-if(marker){
+if(bridgeMarkers[name]){
 
-map.setView(marker.getLatLng(),17);
+map.setView(
 
-marker.openPopup();
+bridgeMarkers[name].getLatLng(),
+
+17
+
+);
+
+bridgeMarkers[name].openPopup();
 
 }
 
 }
 
-
-
-// GPS
 
 
 function locateUser(){
@@ -531,6 +557,7 @@ maxZoom:17
 });
 
 }
+
 
 
 map.on('locationfound',function(e){
@@ -552,39 +579,15 @@ userMarker=L.marker(e.latlng)
 
 
 
-
-// FILTER
-
-
 function toggleFilter(){
 
-var box=document.getElementById("filterBox");
+var f=document.getElementById("filterBox");
 
-box.style.display=
+f.style.display=
 
-box.style.display=="block"?"none":"block";
+f.style.display==="block"
 
-}
-
-
-
-function createCheckbox(div,set){
-
-var html="";
-
-set.forEach(function(val){
-
-html+=`<label>
-
-<input type="checkbox" value="${val}">
-
-${val}
-
-</label><br>`;
-
-});
-
-document.getElementById(div).innerHTML=html;
+? "none":"block";
 
 }
 
@@ -592,50 +595,96 @@ document.getElementById(div).innerHTML=html;
 
 function applyFilter(){
 
+
 var ppk=[];
+
 var nk=[];
 
 
 $("#ppkList input:checked").each(function(){
+
 ppk.push(String(this.value).trim());
+
 });
 
 
 $("#nkList input:checked").each(function(){
+
 nk.push(String(this.value).trim());
+
 });
 
 
-var filtered = rowsData.filter(function(r){
+clusterGroup.clearLayers();
 
-var ppkValue = String(r.PPK).trim();
-var nkValue  = String(r["NK S2 2025"]).trim();
 
-return (
-(ppk.length===0 || ppk.includes(ppkValue))
+markerObjects.forEach(function(marker){
+
+var r=marker.rowData;
+
+
+var ppkValue=String(r.PPK).trim();
+
+var nkValue=String(r["NK S2 2025"]).trim();
+
+
+if(
+
+(ppk.length===0||ppk.includes(ppkValue))
+
 &&
-(nk.length===0 || nk.includes(nkValue))
-);
+
+(nk.length===0||nk.includes(nkValue))
+
+){
+
+clusterGroup.addLayer(marker);
+
+}
 
 });
 
-
-loadBridges(filtered);
 
 toggleFilter();
 
 }
-
 
 
 
 function resetFilter(){
 
-loadBridges(rowsData);
+$("#ppkList input").prop("checked",false);
 
-toggleFilter();
+$("#nkList input").prop("checked",false);
+
+
+clusterGroup.clearLayers();
+
+
+markerObjects.forEach(m=>clusterGroup.addLayer(m));
 
 }
+
+
+
+map.on('zoomend',function(){
+
+var zoom=map.getZoom();
+
+
+markerObjects.forEach(function(marker){
+
+if(zoom>=15)
+
+marker.openTooltip();
+
+else
+
+marker.closeTooltip();
+
+});
+
+});
 
 
 </script>
