@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8" />
+<meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>Peta Jembatan</title>
@@ -16,56 +16,98 @@ font-family:Arial;
 }
 
 #map{
-height:65vh;
+height:100vh;
 }
+
+/* ===== KOTAK FILTER ===== */
 
 .controlBox{
 
 position:absolute;
+
 top:10px;
 left:50%;
+
 transform:translateX(-50%) scale(0.8);
 transform-origin:top center;
 
 background:white;
-padding:10px;
+padding:12px;
 
-border-radius:10px;
+border-radius:12px;
+
 box-shadow:0px 0px 10px rgba(0,0,0,0.3);
 
 z-index:1000;
+
 text-align:center;
+
 }
+
+/* ===== KOTAK SUMMARY ===== */
+
+.summaryBox{
+
+position:absolute;
+
+bottom:20px;
+left:50%;
+
+transform:translateX(-50%) scale(0.8);
+transform-origin:bottom center;
+
+background:white;
+
+padding:12px;
+
+border-radius:12px;
+
+box-shadow:0px 0px 10px rgba(0,0,0,0.3);
+
+z-index:1000;
+
+text-align:left;
+
+font-size:14px;
+
+min-width:260px;
+
+}
+
+
 
 select,button{
 
-padding:5px;
+padding:6px;
+
 margin:3px;
 
 font-size:14px;
 
+width:200px;
+
 }
 
-#summary{
+button{
 
-padding:10px;
-background:#f5f5f5;
-
-font-size:14px;
-
-text-align:center;
-
-border-top:1px solid #ccc;
+width:95px;
 
 }
 
 </style>
+
 </head>
 
 <body>
 
 
 <div class="controlBox">
+
+<select id="filterNama">
+<option value="">Semua Jembatan</option>
+</select>
+
+<br>
 
 <select id="filterNK">
 <option value="">Semua NK</option>
@@ -75,11 +117,11 @@ border-top:1px solid #ccc;
 <option value="4">NK 4</option>
 </select>
 
+<br>
 
 <select id="filterKecamatan">
 <option value="">Semua Kecamatan</option>
 </select>
-
 
 <br>
 
@@ -94,7 +136,8 @@ border-top:1px solid #ccc;
 <div id="map"></div>
 
 
-<div id="summary">
+
+<div class="summaryBox" id="summary">
 
 Memuat data...
 
@@ -107,18 +150,16 @@ Memuat data...
 
 <script>
 
+var map=L.map('map').setView([-7.0,109.0],9);
 
-var map = L.map('map').setView([-7.0,109.0],9);
-
-
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-maxZoom:19
-}).addTo(map);
+L.tileLayer(
+'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+{maxZoom:19}
+).addTo(map);
 
 
 
 var markers=[];
-
 var allData=[];
 
 
@@ -141,31 +182,43 @@ tampilkanData(allData);
 
 function isiDropdown(){
 
-var kecamatanSet=new Set();
+var namaSet=new Set();
+var kecSet=new Set();
 
 
 allData.forEach(f=>{
 
-kecamatanSet.add(f.properties.kecamatan);
+namaSet.add(f.properties.nama);
+
+kecSet.add(f.properties.kecamatan);
 
 });
 
 
-var select=document.getElementById("filterKecamatan");
+var namaSelect=document.getElementById("filterNama");
+var kecSelect=document.getElementById("filterKecamatan");
 
 
-kecamatanSet.forEach(kec=>{
+namaSet.forEach(n=>{
 
-var opt=document.createElement("option");
+var o=document.createElement("option");
+o.value=n;
+o.text=n;
 
-opt.value=kec;
-
-opt.text=kec;
-
-select.appendChild(opt);
+namaSelect.appendChild(o);
 
 });
 
+
+kecSet.forEach(k=>{
+
+var o=document.createElement("option");
+o.value=k;
+o.text=k;
+
+kecSelect.appendChild(o);
+
+});
 
 }
 
@@ -179,9 +232,9 @@ markers.forEach(m=>map.removeLayer(m));
 markers=[];
 
 
-
 var totalJumlah=0;
 var totalPanjang=0;
+
 
 var nkJumlah={1:0,2:0,3:0,4:0};
 var nkPanjang={1:0,2:0,3:0,4:0};
@@ -194,10 +247,10 @@ data.forEach(f=>{
 var lat=f.geometry.coordinates[1];
 var lon=f.geometry.coordinates[0];
 
-
 var nama=f.properties.nama;
 var nk=f.properties.nk;
 var kec=f.properties.kecamatan;
+
 var panjang=parseFloat(f.properties.panjang)||0;
 
 
@@ -219,9 +272,12 @@ markers.push(marker);
 
 
 totalJumlah++;
+
 totalPanjang+=panjang;
 
+
 nkJumlah[nk]++;
+
 nkPanjang[nk]+=panjang;
 
 
@@ -242,18 +298,21 @@ nkPanjang
 
 function updateSummary(jumlah,panjang,nkJumlah,nkPanjang){
 
-
 document.getElementById("summary").innerHTML=
 
-"Jumlah total jembatan : "+jumlah+" buah | Total panjang = "+panjang.toFixed(1)+" m <br><br>"+
 
-"NK 1 : "+nkJumlah[1]+" buah | "+nkPanjang[1].toFixed(1)+" m<br>"+
+"<b>Total Jembatan</b><br>"+
 
-"NK 2 : "+nkJumlah[2]+" buah | "+nkPanjang[2].toFixed(1)+" m<br>"+
+jumlah+" buah | "+panjang.toFixed(1)+" m<br><br>"+
 
-"NK 3 : "+nkJumlah[3]+" buah | "+nkPanjang[3].toFixed(1)+" m<br>"+
 
-"NK 4 : "+nkJumlah[4]+" buah | "+nkPanjang[4].toFixed(1)+" m";
+"NK1 : "+nkJumlah[1]+" buah | "+nkPanjang[1].toFixed(1)+" m<br>"+
+
+"NK2 : "+nkJumlah[2]+" buah | "+nkPanjang[2].toFixed(1)+" m<br>"+
+
+"NK3 : "+nkJumlah[3]+" buah | "+nkPanjang[3].toFixed(1)+" m<br>"+
+
+"NK4 : "+nkJumlah[4]+" buah | "+nkPanjang[4].toFixed(1)+" m";
 
 
 }
@@ -262,6 +321,8 @@ document.getElementById("summary").innerHTML=
 
 function applyFilter(){
 
+
+var nama=document.getElementById("filterNama").value;
 
 var nk=document.getElementById("filterNK").value;
 
@@ -275,6 +336,10 @@ var hasil=allData.filter(f=>{
 var cocok=true;
 
 
+if(nama!="")
+cocok=cocok && f.properties.nama==nama;
+
+
 if(nk!="")
 cocok=cocok && f.properties.nk==nk;
 
@@ -284,6 +349,7 @@ cocok=cocok && f.properties.kecamatan==kec;
 
 
 return cocok;
+
 
 });
 
@@ -297,13 +363,12 @@ tampilkanData(hasil);
 
 function resetFilter(){
 
-
+document.getElementById("filterNama").value="";
 document.getElementById("filterNK").value="";
 document.getElementById("filterKecamatan").value="";
 
 
 tampilkanData(allData);
-
 
 }
 
